@@ -8,7 +8,14 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from '@expo/vector-icons/Feather';
 import { Cart } from './services/storage';
+import { colors, spacing, radius, shadow } from './theme/theme';
+
+function formatPeso(g) {
+  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
+  return `${g} g`;
+}
 
 export default function Carrinho({ navigation }) {
   const [itens, setItens] = useState([]);
@@ -20,11 +27,7 @@ export default function Carrinho({ navigation }) {
     setTotal(lista.reduce((acc, item) => acc + Number(item.preco || 0), 0));
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      carregar();
-    }, [carregar])
-  );
+  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
   async function remover(id) {
     await Cart.remove(id);
@@ -37,10 +40,7 @@ export default function Carrinho({ navigation }) {
       {
         text: 'Esvaziar',
         style: 'destructive',
-        onPress: async () => {
-          await Cart.clear();
-          carregar();
-        },
+        onPress: async () => { await Cart.clear(); carregar(); },
       },
     ]);
   }
@@ -50,18 +50,11 @@ export default function Carrinho({ navigation }) {
       <View style={styles.card}>
         <View style={{ flex: 1 }}>
           <Text style={styles.nome}>{item.nome}</Text>
-          <Text style={styles.detalhe}>
-            {item.quantidade}g - R$ {Number(item.preco).toFixed(2)}
-          </Text>
-          {item.observacao ? (
-            <Text style={styles.obs}>Obs: {item.observacao}</Text>
-          ) : null}
+          <Text style={styles.detalhe}>{formatPeso(item.quantidade)} · R$ {Number(item.preco).toFixed(2)}</Text>
+          {item.observacao ? <Text style={styles.obs}>Obs: {item.observacao}</Text> : null}
         </View>
-        <TouchableOpacity
-          style={styles.btRemover}
-          onPress={() => remover(item.id)}
-        >
-          <Text style={styles.btRemoverTxt}>Remover</Text>
+        <TouchableOpacity style={styles.btRemover} onPress={() => remover(item.id)}>
+          <Icon name="trash-2" size={16} color={colors.danger} />
         </TouchableOpacity>
       </View>
     );
@@ -69,22 +62,18 @@ export default function Carrinho({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Meu Carrinho</Text>
+      <Text style={styles.titulo}>Meu carrinho</Text>
 
       <FlatList
         data={itens}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={
-          itens.length === 0 ? styles.vazio : { paddingBottom: 12 }
-        }
+        contentContainerStyle={itens.length === 0 ? styles.vazio : { paddingBottom: 12 }}
         ListEmptyComponent={
           <View style={styles.vazioBox}>
-            <Text style={styles.vazioTxt}>Carrinho vazio.</Text>
-            <TouchableOpacity
-              style={styles.btIr}
-              onPress={() => navigation.navigate('Home')}
-            >
+            <Icon name="shopping-bag" size={48} color={colors.textMuted} />
+            <Text style={styles.vazioTxt}>Seu carrinho está vazio.</Text>
+            <TouchableOpacity style={styles.btIr} onPress={() => navigation.navigate('Home')}>
               <Text style={styles.btIrTxt}>Ver restaurantes</Text>
             </TouchableOpacity>
           </View>
@@ -93,7 +82,10 @@ export default function Carrinho({ navigation }) {
 
       {itens.length > 0 && (
         <View style={styles.rodape}>
-          <Text style={styles.total}>Total: R$ {total.toFixed(2)}</Text>
+          <View>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.total}>R$ {total.toFixed(2)}</Text>
+          </View>
           <View style={styles.acoes}>
             <TouchableOpacity style={styles.btLimpar} onPress={limpar}>
               <Text style={styles.btLimparTxt}>Esvaziar</Text>
@@ -102,7 +94,7 @@ export default function Carrinho({ navigation }) {
               style={styles.btFinalizar}
               onPress={() => navigation.navigate('FinalizarPedido')}
             >
-              <Text style={styles.btFinalizarTxt}>Finalizar pedido</Text>
+              <Text style={styles.btFinalizarTxt}>Finalizar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -112,79 +104,43 @@ export default function Carrinho({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  titulo: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.md, borderRadius: radius.md,
+    marginBottom: 8, alignItems: 'center', ...shadow.card,
   },
-  nome: { fontSize: 16, fontWeight: 'bold', color: '#4B0000' },
-  detalhe: { color: '#444', marginTop: 2 },
-  obs: { color: '#777', fontSize: 12, marginTop: 2 },
-  btRemover: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#888',
-    borderRadius: 4,
-  },
-  btRemoverTxt: { color: 'white', fontSize: 12 },
+  nome: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  detalhe: { color: colors.textSecondary, marginTop: 2 },
+  obs: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  btRemover: { padding: 10, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
   vazio: { flex: 1, justifyContent: 'center' },
-  vazioBox: { alignItems: 'center', paddingVertical: 40 },
-  vazioTxt: { color: '#666', marginBottom: 12 },
+  vazioBox: { alignItems: 'center', padding: 30, gap: 10 },
+  vazioTxt: { color: colors.textSecondary, fontSize: 14 },
   btIr: {
-    backgroundColor: '#4B0000',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 4,
+    marginTop: 10, backgroundColor: colors.primary,
+    paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.md,
   },
-  btIrTxt: { color: 'white', fontWeight: 'bold' },
+  btIrTxt: { color: colors.textInverse, fontWeight: '700' },
+
   rodape: {
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    paddingTop: 10,
-    paddingBottom: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: radius.lg, ...shadow.card,
   },
-  total: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    textAlign: 'right',
-    marginBottom: 8,
-  },
-  acoes: { flexDirection: 'row', justifyContent: 'space-between' },
+  totalLabel: { color: colors.textSecondary, fontSize: 11 },
+  total: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
+  acoes: { flexDirection: 'row', gap: 8 },
   btLimpar: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#888',
-    alignItems: 'center',
-    marginRight: 8,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md,
   },
-  btLimparTxt: { color: '#444' },
+  btLimparTxt: { color: colors.textPrimary, fontWeight: '600' },
   btFinalizar: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 4,
-    backgroundColor: '#4B0000',
-    alignItems: 'center',
+    paddingHorizontal: 18, paddingVertical: 12,
+    backgroundColor: colors.primary, borderRadius: radius.md,
   },
-  btFinalizarTxt: { color: 'white', fontWeight: 'bold' },
+  btFinalizarTxt: { color: colors.textInverse, fontWeight: '700' },
 });
