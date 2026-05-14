@@ -1,147 +1,145 @@
-import React from 'react'
-import {  Image } from "react-native";
-import { StyleSheet, View, Text} from 'react-native';
-import Icon from '@expo/vector-icons/Fontisto';
-import arrozbranco from '../assets/arrozbranco2.png'
-import feijaopreto from  '../assets/feijaopreto.png'
-import macarraoTomate from '../assets/macarraoTomate.png'
+import React, { useCallback, useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import Icon from '@expo/vector-icons/Feather';
+import { Catalogo, IMAGENS } from './services/catalogo';
+import { colors, spacing, radius, shadow } from './theme/theme';
 
+// Mapeia o id do prato para o nome da rota existente.
+// (Os cadastrados pelo admin caem na rota genérica.)
+const ROTAS_FIXAS = {
+  'arroz-branco': 'Arroz',
+  'feijao-preto': 'Feijao',
+  'macarrao': 'Macarrao',
+};
 
-export default function CardapioCacarola({navigation}) {
+export default function CardapioCacarola({ navigation }) {
+  const [pratos, setPratos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        setCarregando(true);
+        const lista = await Catalogo.list();
+        setPratos(lista.filter((p) => p.disponivel !== false));
+        setCarregando(false);
+      })();
+    }, [])
+  );
+
+  function abrirPrato(p) {
+    const rota = ROTAS_FIXAS[p.id];
+    if (rota) navigation.navigate(rota);
+    else navigation.navigate('Arroz', { id: p.id }); // genérico via params
+  }
+
+  if (carregando) {
     return (
-      <View style={styles.container}>
-        <View style={styles.alinhamento}>
-          <View style={styles.imagem}>
-            <Image 
-            style={styles.arrozbranco}
-            source={arrozbranco}>
-            </Image>
-          <View style={styles.Text1}>
-            <Text style={styles.caca} onPress={() => navigation.navigate('Arroz')}>Arroz Branco</Text>
-            <Text style={styles.aberto}>Arroz branco tradicional</Text>
-            <Text style={styles.km}>Imagem ilustrativa 150g</Text>
-          </View>  
-          </View>
-          
-          
-        </View>
-
-        <View style={styles.alinhamento}>
-          <View style={styles.imagem}>
-            <Image 
-            style={styles.feijaopreto}
-            source={feijaopreto}>
-            </Image>
-          <View style={styles.Text1}>
-            <Text style={styles.caca} onPress={() => navigation.navigate('Feijao')}>Feijão Preto</Text>
-            <Text style={styles.aberto}>Feijão preto tradicional</Text>
-            <Text style={styles.km}>Imagem ilustrativa 150g</Text>
-          </View>  
-          </View>
-          
-        </View>
-
-        <View style={styles.alinhamento}>
-          <View style={styles.imagem}>
-            <Image 
-            style={styles.feijaopreto}
-            source={macarraoTomate}>
-            </Image>
-          <View style={styles.Text1}>
-            <Text style={styles.caca} onPress={() => navigation.navigate('Macarrao')}>Macarrão</Text>
-            <Text style={styles.aberto}>Macarrão com molho de tomate</Text>
-            <Text style={styles.km}>Imagem ilustrativa 150g</Text>
-          </View>  
-          </View>
-          
-        </View>
-        <View style={styles.carrinho}>
-          <Icon.Button
-              name="shopping-basket"
-              size={20}
-              color="#900"
-              backgroundColor={'white'}
-              onPress={() => navigation.navigate('FinalizarPedido')}>
-            </Icon.Button>
-          </View> 
-
-        </View>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
     );
+  }
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
+        {/* Banner do restaurante */}
+        <View style={styles.banner}>
+          <Text style={styles.bannerTitulo}>Caçarola Restaurante</Text>
+          <View style={styles.bannerInfo}>
+            <Icon name="star" size={12} color={colors.accent} />
+            <Text style={styles.bannerInfoTxt}>4.7 · 1,5 KM · Entrega grátis</Text>
+          </View>
+          <View style={styles.bannerTag}>
+            <Text style={styles.bannerTagTxt}>Comida por kg</Text>
+          </View>
+        </View>
+
+        <Text style={styles.tituloSecao}>Pratos disponíveis</Text>
+
+        {pratos.map((p) => (
+          <TouchableOpacity
+            key={p.id}
+            style={styles.cardPrato}
+            onPress={() => abrirPrato(p)}
+            activeOpacity={0.85}
+          >
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={styles.nome}>{p.nome}</Text>
+              <Text style={styles.descricao} numberOfLines={2}>{p.descricao}</Text>
+              <Text style={styles.preco}>R$ {p.precoPorKg.toFixed(2)} <Text style={styles.precoUnid}>/ kg</Text></Text>
+              <Text style={styles.regra}>
+                {p.pesoMinG}g – {(p.pesoMaxG / 1000).toFixed(2)}kg
+              </Text>
+            </View>
+            <Image
+              source={IMAGENS[p.imagemKey]}
+              style={styles.imagem}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('Carrinho')}
+        activeOpacity={0.85}
+      >
+        <Icon name="shopping-bag" size={22} color={colors.textInverse} />
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,    
-      alignItems: 'center', 
-      backgroundColor: 'white',
-      justifyContent: 'center',
-      
-    },
-      imagem:{
-      width:70,
-      height:83,
-         
-    }, 
-    arrozbranco:{
-      width:110,
-      height:83,
-      marginBottom:600,
-      right:'10%',
-      top:'-10%'
+  container: { flex: 1, backgroundColor: colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
 
-    },
-    feijaopreto:{
-        width:110,
-        height:83,
-        marginBottom:600,
-        right:'5%',
-        top:'-5%',
-  
-      },
-    alinhamento:{
-      borderBottomWidth:2,
-      borderBottomColor:'gray',
-      borderRadius:10,
-      top: '-30%',
-      right:'10',
-      width:'100%',
-      
-    },
-    alinhamentoSabores:{
-      borderBottomWidth:2,
-      borderBottomColor:'gray',
-      borderRadius:10,
-      top: '-33%',
-      right:'10',
-      width:'100%',
+  banner: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg, borderRadius: radius.lg, marginBottom: spacing.lg,
+    ...shadow.card,
+  },
+  bannerTitulo: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  bannerInfo: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  bannerInfoTxt: { color: colors.textSecondary, fontSize: 12 },
+  bannerTag: {
+    backgroundColor: colors.primaryLight, alignSelf: 'flex-start',
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.pill, marginTop: 8,
+  },
+  bannerTagTxt: { color: colors.primary, fontSize: 11, fontWeight: '700' },
 
-    },
-    Text1:{
-      width:80,
-      marginLeft:80,
-      marginTop:-683,
-      flexDirection:'column',
-      right:'-40%'
-      
-    },
-    caca:{
-      fontSize:20,
-      width:200
-    },
-    aberto:{
-      width:400,
-      color:'green',
-      flexDirection:'row'
-    },
-    km:{
-      width:200,
-      color:'gray',
-      flexDirection:'row'
+  tituloSecao: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
 
-    },
-    carrinho:{
-      top:'-20%',
-      left:'35%'
-      },
+  cardPrato: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    padding: spacing.md, marginBottom: 10,
+    borderRadius: radius.lg, ...shadow.card,
+  },
+  nome: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  descricao: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  preco: { color: colors.primary, fontWeight: '700', marginTop: 6 },
+  precoUnid: { color: colors.textSecondary, fontWeight: '400', fontSize: 12 },
+  regra: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  imagem: { width: 88, height: 88, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
 
-  });
+  fab: {
+    position: 'absolute', right: 20, bottom: 24,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center', ...shadow.card,
+  },
+});

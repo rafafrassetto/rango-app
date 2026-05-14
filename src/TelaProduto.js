@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,165 +7,308 @@ import {
   Image,
   Alert,
   ScrollView,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
-import { TextInput } from 'react-native';
-import Icon from '@expo/vector-icons/FontAwesome';
-import Icon2 from '@expo/vector-icons/Fontisto';
+import Icon from '@expo/vector-icons/Feather';
 import { Cart } from './services/storage';
+import { Catalogo, IMAGENS, PRESETS_FOME } from './services/catalogo';
+import { colors, spacing, radius, shadow } from './theme/theme';
 
-const PRECO_REFERENCIA_500G = 40;
+function formatarPeso(g) {
+  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
+  return `${g} g`;
+}
 
-export default function TelaProduto({
-  navigation,
-  nome,
-  imagem,
-  passo = 50,
-  inicial = 50,
-  maximo = 500,
-}) {
-  const [resultado, setResultado] = useState(inicial);
+function clampPeso(valor, prato) {
+  if (!prato) return valor;
+  return Math.max(prato.pesoMinG, Math.min(prato.pesoMaxG, valor));
+}
+
+export default function TelaProduto({ navigation, route }) {
+  // O id do prato pode vir por params (nova navegação)
+  // ou usamos fallback para 'arroz-branco' por compatibilidade.
+  const idPrato = route?.params?.id || 'arroz-branco';
+
+  const [prato, setPrato] = useState(null);
+  const [pesoG, setPesoG] = useState(0);
   const [observacao, setObservacao] = useState('');
+  const [presetAtivo, setPresetAtivo] = useState(null);
 
-  const preco = (resultado * PRECO_REFERENCIA_500G) / 500;
+  useEffect(() => {
+    (async () => {
+      const p = await Catalogo.get(idPrato);
+      setPrato(p);
+      if (p) setPesoG(p.pesoMinG);
+    })();
+  }, [idPrato]);
 
-  function somar() {
-    setResultado((prev) => Math.min(prev + passo, maximo));
+  const preco = useMemo(() => {
+    if (!prato) return 0;
+    return (pesoG / 1000) * prato.precoPorKg;
+  }, [pesoG, prato]);
+
+  function ajustarPeso(delta) {
+    if (!prato) return;
+    setPresetAtivo(null);
+    setPesoG((prev) => clampPeso(prev + delta, prato));
   }
 
-  function subtrair() {
-    setResultado((prev) => Math.max(prev - passo, passo));
+  function aplicarPreset(preset) {
+    if (!prato) return;
+    const novoPeso = clampPeso(preset.pesoG, prato);
+    setPesoG(novoPeso);
+    setPresetAtivo(preset.id);
   }
 
   async function adicionarAoCarrinho() {
+    if (!prato) return;
     await Cart.add({
-      nome,
-      quantidade: resultado,
+      pratoId: prato.id,
+      nome: prato.nome,
+      quantidade: pesoG,
       preco: parseFloat(preco.toFixed(2)),
+      precoPorKg: prato.precoPorKg,
       observacao,
     });
-    Alert.alert('Adicionado', `${nome} adicionado ao carrinho!`, [
-      { text: 'Continuar', style: 'cancel' },
-      {
-        text: 'Ver carrinho',
-        onPress: () => navigation.navigate('Carrinho'),
-      },
-    ]);
+    Alert.alert(
+      'Adicionado ao carrinho',
+      `${formatarPeso(pesoG)} de ${prato.nome}`,
+      [
+        { text: 'Continuar', style: 'cancel' },
+        { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
+      ]
+    );
   }
 
+  if (!prato) {
+    return (
+      <View style={styles.loadingBox}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const presetsDisponiveis = PRESETS_FOME.map((p) => ({
+    ...p,
+    indisponivel: p.pesoG < prato.pesoMinG || p.pesoG > prato.pesoMaxG,
+  }));
+
   return (
-    <ScrollView style={styles.container}>
-      <Image style={styles.imagem} source={imagem} resizeMode="cover" />
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <Image
+        style={styles.imagem}
+        source={IMAGENS[prato.imagemKey]}
+        resizeMode="cover"
+      />
 
       <View style={styles.bloco}>
-        <Text style={styles.titulo}>{nome}</Text>
-
-        <View style={styles.contadorBox}>
-          <TouchableOpacity style={styles.botaoCounter} onPress={subtrair}>
-            <Text style={styles.botaoCounterTxt}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.resultado}>{resultado}g</Text>
-          <TouchableOpacity style={styles.botaoCounter} onPress={somar}>
-            <Text style={styles.botaoCounterTxt}>+</Text>
-          </TouchableOpacity>
+        <View style={styles.headerLinha}>
+          <Text style={styles.titulo}>{prato.nome}</Text>
+          <View style={styles.tagKg}>
+            <Text style={styles.tagKgTxt}>por kg</Text>
+          </View>
         </View>
-
-        <Text style={styles.preco}>
-          Preço: <Text style={styles.precoValor}>R$ {preco.toFixed(2)}</Text>
+        <Text style={styles.descricao}>{prato.descricao}</Text>
+        <Text style={styles.precoKg}>
+          R$ {prato.precoPorKg.toFixed(2)}
+          <Text style={styles.precoKgUnidade}> / kg</Text>
         </Text>
 
-        <View style={styles.anotLabel}>
-          <Text style={styles.anotTxt}>Anotação </Text>
-          <Icon name="comment-o" size={15} color="#000" />
+        {/* Filtros de fome */}
+        <Text style={styles.label}>Qual é a sua fome?</Text>
+        <View style={styles.presetsBox}>
+          {presetsDisponiveis.map((p) => {
+            const ativo = presetAtivo === p.id;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                disabled={p.indisponivel}
+                style={[
+                  styles.presetChip,
+                  ativo && styles.presetChipAtivo,
+                  p.indisponivel && styles.presetChipDisabled,
+                ]}
+                onPress={() => aplicarPreset(p)}
+              >
+                <Text style={styles.presetEmoji}>{p.emoji}</Text>
+                <Text
+                  style={[
+                    styles.presetRotulo,
+                    ativo && styles.presetRotuloAtivo,
+                    p.indisponivel && styles.presetTxtDisabled,
+                  ]}
+                >
+                  {p.rotulo}
+                </Text>
+                <Text
+                  style={[
+                    styles.presetDesc,
+                    ativo && styles.presetDescAtivo,
+                    p.indisponivel && styles.presetTxtDisabled,
+                  ]}
+                >
+                  {p.descricao}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+
+        {/* Seletor de peso manual */}
+        <Text style={styles.label}>Ajuste fino</Text>
+        <View style={styles.seletorPeso}>
+          <TouchableOpacity
+            style={styles.btCounter}
+            onPress={() => ajustarPeso(-prato.passoG)}
+          >
+            <Icon name="minus" size={20} color={colors.primary} />
+          </TouchableOpacity>
+          <View style={styles.pesoDisplay}>
+            <Text style={styles.pesoValor}>{formatarPeso(pesoG)}</Text>
+            <Text style={styles.pesoLimites}>
+              min {formatarPeso(prato.pesoMinG)} · max {formatarPeso(prato.pesoMaxG)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.btCounter}
+            onPress={() => ajustarPeso(prato.passoG)}
+          >
+            <Icon name="plus" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Anotação */}
+        <Text style={styles.label}>Alguma observação?</Text>
         <TextInput
           style={styles.inputAnot}
           multiline
           maxLength={200}
           value={observacao}
           onChangeText={setObservacao}
-          placeholder="Ex: sem cebola, ponto da carne..."
+          placeholder="Ex: sem cebola, ponto da carne, separar molho…"
+          placeholderTextColor={colors.placeholder}
         />
-
-        <TouchableOpacity
-          style={styles.btComprar}
-          onPress={adicionarAoCarrinho}
-        >
-          <Text style={styles.btComprarTxt}>Adicionar ao carrinho</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btCarrinho}
-          onPress={() => navigation.navigate('Carrinho')}
-        >
-          <Text style={styles.btComprarTxt}>Ir para carrinho</Text>
-        </TouchableOpacity>
       </View>
 
-      <View style={styles.flutuante}>
-        <Icon2.Button
-          name="shopping-basket"
-          size={20}
-          color="#900"
-          backgroundColor="white"
-          onPress={() => navigation.navigate('Carrinho')}
-        />
+      {/* Rodapé fixo com preço e CTA */}
+      <View style={styles.rodape}>
+        <View>
+          <Text style={styles.rodapeLabel}>Total</Text>
+          <Text style={styles.rodapeValor}>R$ {preco.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity style={styles.btComprar} onPress={adicionarAoCarrinho}>
+          <Icon name="shopping-bag" size={18} color={colors.textInverse} />
+          <Text style={styles.btComprarTxt}>Adicionar</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
-  imagem: { width: '100%', height: 240 },
-  bloco: { padding: 18 },
-  titulo: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  imagem: { width: '100%', height: 240, backgroundColor: colors.surfaceAlt },
+
+  bloco: {
+    backgroundColor: colors.surface,
+    marginTop: -16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  contadorBox: {
+
+  headerLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  titulo: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+
+  tagKg: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  tagKgTxt: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+
+  descricao: { color: colors.textSecondary, marginTop: 6, lineHeight: 20 },
+  precoKg: { fontSize: 18, color: colors.primary, fontWeight: '700', marginTop: 10 },
+  precoKgUnidade: { fontSize: 13, color: colors.textSecondary, fontWeight: '400' },
+
+  label: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
+
+  presetsBox: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: {
+    width: '48%',
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  presetChipAtivo: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  presetChipDisabled: { opacity: 0.4 },
+  presetEmoji: { fontSize: 22 },
+  presetRotulo: { fontWeight: '700', color: colors.textPrimary, marginTop: 6 },
+  presetRotuloAtivo: { color: colors.primary },
+  presetDesc: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  presetDescAtivo: { color: colors.primaryDark },
+  presetTxtDisabled: { color: colors.textMuted },
+
+  seletorPeso: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: spacing.sm,
   },
-  botaoCounter: {
-    backgroundColor: '#4B0000',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
+  btCounter: {
+    width: 44, height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
-  botaoCounterTxt: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  resultado: { fontSize: 18, marginHorizontal: 18 },
-  preco: { fontSize: 16, marginBottom: 16 },
-  precoValor: { color: 'green', fontWeight: 'bold' },
-  anotLabel: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  anotTxt: { color: '#444' },
+  pesoDisplay: { alignItems: 'center' },
+  pesoValor: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  pesoLimites: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+
   inputAnot: {
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 8,
-    minHeight: 60,
+    borderColor: colors.divider,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 70,
     textAlignVertical: 'top',
-    marginBottom: 14,
+    color: colors.textPrimary,
   },
+
+  rodape: {
+    marginTop: 18,
+    marginHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    ...shadow.card,
+  },
+  rodapeLabel: { color: colors.textSecondary, fontSize: 12 },
+  rodapeValor: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
   btComprar: {
-    backgroundColor: '#4B0000',
-    paddingVertical: 12,
-    borderRadius: 4,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    gap: 8,
   },
-  btCarrinho: {
-    backgroundColor: 'gray',
-    paddingVertical: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-  },
-  btComprarTxt: { color: 'white', fontWeight: 'bold' },
-  flutuante: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-  },
+  btComprarTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
 });

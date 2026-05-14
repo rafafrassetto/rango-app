@@ -20,11 +20,18 @@ import MeusEnderecos from './src/MeusEnderecos';
 import EditarEndereco from './src/EditarEndereco';
 import Perfil from './src/Perfil';
 
+// Módulo do restaurante
+import LoginRestaurante from './src/restaurante/LoginRestaurante';
+import PainelRestaurante from './src/restaurante/PainelRestaurante';
+import EditarPrato from './src/restaurante/EditarPrato';
+
+import { colors } from './src/theme/theme';
+
 const Stack = createNativeStackNavigator();
 
 const headerEstilo = {
-  headerStyle: { backgroundColor: '#4B0000' },
-  headerTintColor: 'white',
+  headerStyle: { backgroundColor: colors.primary },
+  headerTintColor: colors.textInverse,
   headerTitleStyle: { fontWeight: 'bold' },
 };
 
@@ -35,6 +42,7 @@ export default function App() {
         initialRouteName="Login"
         screenOptions={headerEstilo}
       >
+        {/* Cliente */}
         <Stack.Screen
           name="Login"
           component={Login}
@@ -124,6 +132,23 @@ export default function App() {
           name="Perfil"
           component={Perfil}
           options={{ title: 'Meu Perfil' }}
+        />
+
+        {/* Módulo do restaurante */}
+        <Stack.Screen
+          name="LoginRestaurante"
+          component={LoginRestaurante}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PainelRestaurante"
+          component={PainelRestaurante}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditarPrato"
+          component={EditarPrato}
+          options={{ title: 'Prato' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

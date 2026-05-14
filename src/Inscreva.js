@@ -3,15 +3,16 @@ import {
   StyleSheet,
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import fundo from '../assets/LOGOCOMPESSOAS.png';
 import { Session } from './services/storage';
+import { colors, spacing, radius } from './theme/theme';
 
 const API_URL = 'http://localhost:3000';
 
@@ -34,10 +35,7 @@ export default function Inscreva({ navigation }) {
     try {
       const response = await fetch(`${API_URL}/create`, {
         method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify(usuario),
       });
       const ress = await response.json();
@@ -46,7 +44,6 @@ export default function Inscreva({ navigation }) {
         { text: 'OK', onPress: () => navigation.navigate('Login') },
       ]);
     } catch (e) {
-      // fallback offline
       await Session.set({ nome: usuario.nome, email, senha });
       Alert.alert(
         'Cadastro local',
@@ -59,103 +56,60 @@ export default function Inscreva({ navigation }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.imagem}>
-        <Image style={styles.fundo} source={fundo} />
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.titulo}>Criar conta</Text>
+        <Text style={styles.subtitulo}>É rapidinho, em menos de 1 minuto.</Text>
 
-      <View style={styles.direction}>
-        <TextInput
-          onChangeText={setNome}
-          value={nome}
-          placeholder="Nome"
-          style={styles.input}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Sobrenome"
-          value={sobrenome}
-          onChangeText={setSobrenome}
-          placeholderTextColor="gray"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={setEmail}
-          value={email}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Telefone"
-          value={telefone}
-          onChangeText={setTelefone}
-          keyboardType="phone-pad"
-          placeholderTextColor="gray"
-        />
-        <TextInput
-          secureTextEntry
-          style={styles.input}
-          onChangeText={setSenha}
-          value={senha}
-          placeholder="Senha"
-        />
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.label}>Nome</Text>
+          <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Seu nome" placeholderTextColor={colors.placeholder} />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={registerUser}
-        disabled={enviando}
-      >
-        {enviando ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.inscrevase}>Inscreva-se</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+          <Text style={styles.label}>Sobrenome</Text>
+          <TextInput style={styles.input} value={sobrenome} onChangeText={setSobrenome} placeholder="Seu sobrenome" placeholderTextColor={colors.placeholder} />
+
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="voce@email.com" autoCapitalize="none" keyboardType="email-address" placeholderTextColor={colors.placeholder} />
+
+          <Text style={styles.label}>Telefone</Text>
+          <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" keyboardType="phone-pad" placeholderTextColor={colors.placeholder} />
+
+          <Text style={styles.label}>Senha</Text>
+          <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="••••••••" placeholderTextColor={colors.placeholder} />
+
+          <TouchableOpacity style={styles.bt} onPress={registerUser} disabled={enviando}>
+            {enviando
+              ? <ActivityIndicator color={colors.textInverse} />
+              : <Text style={styles.btTxt}>Cadastrar</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 14, alignItems: 'center' }}>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>Já tenho conta · Entrar</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  direction: {
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  imagem: {
-    alignItems: 'flex-end',
-    marginBottom: 8,
-  },
-  fundo: {
-    height: 160,
-    width: 130,
-  },
+  container: { padding: spacing.lg },
+  titulo: { fontSize: 22, fontWeight: '700', color: colors.textPrimary, marginTop: 10 },
+  subtitulo: { color: colors.textSecondary, marginTop: 4, marginBottom: 16 },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg },
+  label: { color: colors.textSecondary, fontSize: 12, marginTop: 10, marginBottom: 4 },
   input: {
-    marginVertical: 8,
-    borderBottomWidth: 1,
-    borderColor: 'gray',
-    color: 'gray',
-    width: 240,
-    paddingVertical: 6,
+    backgroundColor: colors.inputBg,
+    borderWidth: 1, borderColor: colors.inputBorder,
+    borderRadius: radius.md, padding: 12, color: colors.textPrimary,
   },
-  inscrevase: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+  bt: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14, borderRadius: radius.md,
+    alignItems: 'center', marginTop: 18,
   },
-  button: {
-    backgroundColor: '#4B0000',
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    marginTop: 8,
-  },
+  btTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
 });

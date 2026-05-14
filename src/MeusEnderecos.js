@@ -8,44 +8,36 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from '@expo/vector-icons/Feather';
 import { Addresses } from './services/storage';
+import { colors, spacing, radius, shadow } from './theme/theme';
 
 export default function MeusEnderecos({ navigation }) {
   const [enderecos, setEnderecos] = useState([]);
 
   const carregar = useCallback(async () => {
-    const lista = await Addresses.list();
-    setEnderecos(lista);
+    setEnderecos(await Addresses.list());
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      carregar();
-    }, [carregar])
-  );
+  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
   function confirmarExclusao(id) {
-    Alert.alert(
-      'Excluir endereço',
-      'Tem certeza que deseja excluir esse endereço?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            await Addresses.remove(id);
-            carregar();
-          },
-        },
-      ]
-    );
+    Alert.alert('Excluir endereço', 'Tem certeza?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir', style: 'destructive',
+        onPress: async () => { await Addresses.remove(id); carregar(); },
+      },
+    ]);
   }
 
   function renderItem({ item }) {
     return (
       <View style={styles.card}>
-        <Text style={styles.titulo}>{item.apelido || 'Endereço'}</Text>
+        <View style={styles.cardHeader}>
+          <Icon name="map-pin" size={16} color={colors.primary} />
+          <Text style={styles.titulo}>{item.apelido || 'Endereço'}</Text>
+        </View>
         <Text style={styles.linha}>
           {item.rua}, {item.numero}
           {item.complemento ? ` - ${item.complemento}` : ''}
@@ -58,18 +50,13 @@ export default function MeusEnderecos({ navigation }) {
 
         <View style={styles.acoes}>
           <TouchableOpacity
-            style={[styles.botao, styles.btEditar]}
-            onPress={() =>
-              navigation.navigate('EditarEndereco', { id: item.id })
-            }
+            style={styles.btEditar}
+            onPress={() => navigation.navigate('EditarEndereco', { id: item.id })}
           >
-            <Text style={styles.botaoTxt}>Editar</Text>
+            <Text style={styles.btEditarTxt}>Editar</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.botao, styles.btExcluir]}
-            onPress={() => confirmarExclusao(item.id)}
-          >
-            <Text style={styles.botaoTxt}>Excluir</Text>
+          <TouchableOpacity style={styles.btExcluir} onPress={() => confirmarExclusao(item.id)}>
+            <Text style={styles.btExcluirTxt}>Excluir</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -78,83 +65,55 @@ export default function MeusEnderecos({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.tituloTela}>Meus Endereços</Text>
-      <TouchableOpacity
-        style={styles.btNovo}
-        onPress={() => navigation.navigate('EditarEndereco', {})}
-      >
-        <Text style={styles.btNovoTxt}>+ Novo endereço</Text>
+      <Text style={styles.tituloTela}>Meus endereços</Text>
+      <TouchableOpacity style={styles.btNovo} onPress={() => navigation.navigate('EditarEndereco', {})}>
+        <Icon name="plus" size={16} color={colors.textInverse} />
+        <Text style={styles.btNovoTxt}>Novo endereço</Text>
       </TouchableOpacity>
 
       <FlatList
         data={enderecos}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={enderecos.length === 0 && styles.vazio}
         ListEmptyComponent={
           <View style={styles.vazioBox}>
-            <Text style={styles.vazioTxt}>
-              Nenhum endereço cadastrado ainda.
-            </Text>
+            <Text style={styles.vazioTxt}>Nenhum endereço cadastrado ainda.</Text>
           </View>
         }
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-  },
-  tituloTela: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  tituloTela: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
   btNovo: {
-    backgroundColor: '#4B0000',
-    paddingVertical: 10,
-    borderRadius: 4,
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 12, borderRadius: radius.md,
+    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
     marginBottom: 12,
   },
-  btNovoTxt: { color: 'white', fontWeight: 'bold' },
+  btNovoTxt: { color: colors.textInverse, fontWeight: '700' },
   card: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: radius.lg, marginBottom: 10, ...shadow.card,
   },
-  titulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    marginBottom: 4,
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  titulo: { fontWeight: '700', color: colors.textPrimary },
+  linha: { color: colors.textSecondary, fontSize: 13, marginVertical: 1 },
+  acoes: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  btEditar: {
+    flex: 1, backgroundColor: colors.primary,
+    paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center',
   },
-  linha: { color: '#444', fontSize: 13, marginVertical: 1 },
-  acoes: {
-    flexDirection: 'row',
-    marginTop: 10,
-    justifyContent: 'flex-end',
+  btEditarTxt: { color: colors.textInverse, fontWeight: '700' },
+  btExcluir: {
+    flex: 1, backgroundColor: colors.surfaceAlt,
+    paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center',
   },
-  botao: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 4,
-    marginLeft: 8,
-  },
-  btEditar: { backgroundColor: '#4B0000' },
-  btExcluir: { backgroundColor: '#888' },
-  botaoTxt: { color: 'white', fontWeight: '600' },
-  vazio: { flex: 1, justifyContent: 'center' },
-  vazioBox: { alignItems: 'center', paddingVertical: 40 },
-  vazioTxt: { color: '#666' },
+  btExcluirTxt: { color: colors.danger, fontWeight: '700' },
+  vazioBox: { alignItems: 'center', padding: 30 },
+  vazioTxt: { color: colors.textSecondary },
 });
