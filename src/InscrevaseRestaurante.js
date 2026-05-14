@@ -1,102 +1,69 @@
-import React from 'react'
-import { Button, Image } from "react-native";
-import { StyleSheet, View, TextInput,TouchableOpacity, Text} from 'react-native';
-import fundo from '../assets/LOGOCOMPESSOAS.png'
+import React, { useState } from 'react';
+import {
+  StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ScrollView,
+} from 'react-native';
+import { RestauranteAuth } from './services/restauranteAuth';
+import { colors, spacing, radius } from './theme/theme';
 
-export default function InscrevaseRestaurante({navigation}) {
-    return (
-      <View style={styles.container}>
-        
-          <View style={styles.imagem}>
-            <Image
-            style={styles.fundo}
-            source={fundo}>
-            </Image>
-          </View>
+export default function InscrevaseRestaurante({ navigation }) {
+  const [form, setForm] = useState({
+    nome: '', email: '', telefone: '', cnpj: '', senha: '',
+  });
 
-          <View style={styles.direction}>
-            <TextInput style={styles.input}
-              placeholder="Restaurante "
-              placeholderTextColor="gray"/>  
+  function setCampo(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
-              <TextInput style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="gray"/>  
+  async function inscrever() {
+    if (!form.nome || !form.email || !form.senha) {
+      return Alert.alert('Atenção', 'Preencha pelo menos nome, e-mail e senha.');
+    }
+    await RestauranteAuth.register(form);
+    Alert.alert('Sucesso', 'Restaurante cadastrado! Faça login para acessar o painel.', [
+      { text: 'OK', onPress: () => navigation.navigate('LoginRestaurante') },
+    ]);
+  }
 
-              <TextInput style={styles.input}
-              placeholder="Telefone"
-              placeholderTextColor="gray"/> 
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.titulo}>Cadastrar restaurante</Text>
+      <Text style={styles.subtitulo}>Comece a vender no Rango App em minutos.</Text>
 
-              <TextInput style={styles.input}
-              placeholder="Cnpj"
-              placeholderTextColor="gray"/>  
+      <View style={styles.card}>
+        <Text style={styles.label}>Nome do restaurante</Text>
+        <TextInput style={styles.input} value={form.nome} onChangeText={(t) => setCampo('nome', t)} placeholder="Ex: Caçarola" placeholderTextColor={colors.placeholder} />
 
-            <TextInput secureTextEntry = {true} style={styles.input}
-            placeholder="Senha"
-            placeholderTextColor="gray"/>
+        <Text style={styles.label}>E-mail</Text>
+        <TextInput style={styles.input} value={form.email} onChangeText={(t) => setCampo('email', t)} autoCapitalize="none" keyboardType="email-address" placeholderTextColor={colors.placeholder} />
 
-           
-          </View>
+        <Text style={styles.label}>Telefone</Text>
+        <TextInput style={styles.input} value={form.telefone} onChangeText={(t) => setCampo('telefone', t)} keyboardType="phone-pad" placeholderTextColor={colors.placeholder} />
 
-          <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate
-              ('')}>
-              <Text style={styles.inscrevase}>Inscreva-se</Text>
-          </TouchableOpacity>
+        <Text style={styles.label}>CNPJ</Text>
+        <TextInput style={styles.input} value={form.cnpj} onChangeText={(t) => setCampo('cnpj', t)} keyboardType="numeric" placeholderTextColor={colors.placeholder} />
 
-          
+        <Text style={styles.label}>Senha</Text>
+        <TextInput style={styles.input} value={form.senha} onChangeText={(t) => setCampo('senha', t)} secureTextEntry placeholderTextColor={colors.placeholder} />
+
+        <TouchableOpacity style={styles.bt} onPress={inscrever}>
+          <Text style={styles.btTxt}>Cadastrar restaurante</Text>
+        </TouchableOpacity>
       </View>
-    );
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,    
-      alignItems: 'center', 
-      backgroundColor: 'white',
-      justifyContent: 'center',
-      
-    },
-    direction: {
-      alignItems: 'center',
-      top:'-3%'
-      
-    },
-    imagem:{
-      top:'5%',
-      alignItems: "flex-end" ,
-      
-    },
-    fundo:{
-        height:200,
-        width:150,
-        marginRight:25
-       
-    },
-    input:{
-      margin:25,
-      borderBottomWidth: 1,
-      borderColor:'gray',
-      alignItems: 'center',
-      color:'gray'
-    },
-    inscrevase:{
-      alignItems:"center",
-      color:"white",
-      textAlign:'center',
-      fontFamily: 'Quicksand-Bold.ttf'
-    },
-    button:{
-      backgroundColor:"#4B0000",
-      top:'-2%',
-      borderRadius:5,
-      borderBottomWidth: 1,
-      width:90,
-      height:25
-
-      
-  
-    },
-
-  });
+  container: { padding: spacing.lg, backgroundColor: colors.background, flexGrow: 1 },
+  titulo: { fontSize: 22, fontWeight: '700', color: colors.textPrimary, marginTop: 8 },
+  subtitulo: { color: colors.textSecondary, marginTop: 4, marginBottom: 16 },
+  card: { backgroundColor: colors.surface, padding: spacing.lg, borderRadius: radius.lg },
+  label: { color: colors.textSecondary, fontSize: 12, marginTop: 10, marginBottom: 4 },
+  input: {
+    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder,
+    borderRadius: radius.md, padding: 12, color: colors.textPrimary,
+  },
+  bt: {
+    backgroundColor: colors.primary, paddingVertical: 14,
+    borderRadius: radius.md, alignItems: 'center', marginTop: 18,
+  },
+  btTxt: { color: colors.textInverse, fontWeight: '700' },
+});

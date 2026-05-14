@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
+  Text,
   Image,
   TextInput,
   TouchableOpacity,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import logo from '../assets/Logo.png';
+import { colors, spacing, radius } from './theme/theme';
 
 const API_URL = 'http://localhost:3000';
 
@@ -20,28 +21,22 @@ export default function Esqueceu({ navigation }) {
 
   async function recuperar() {
     if (!email || !novaSenha) {
-      Alert.alert('Atenção', 'Preencha email e nova senha.');
+      Alert.alert('Atenção', 'Preencha email e a nova senha.');
       return;
     }
+    setEnviando(true);
     try {
-      setEnviando(true);
-      const response = await fetch(`${API_URL}/update`, {
+      const r = await fetch(`${API_URL}/update`, {
         method: 'PUT',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, novaSenha }),
       });
-      const json = await response.json();
-      Alert.alert('Recuperação de senha', String(json), [
+      const txt = await r.json();
+      Alert.alert('Tudo certo', String(txt), [
         { text: 'OK', onPress: () => navigation.navigate('Login') },
       ]);
     } catch (e) {
-      Alert.alert(
-        'Erro',
-        'Não foi possível atualizar agora. Verifique se o servidor está rodando.'
-      );
+      Alert.alert('Servidor offline', 'Tente novamente quando o backend estiver online.');
     } finally {
       setEnviando(false);
     }
@@ -49,96 +44,65 @@ export default function Esqueceu({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Image style={styles.meuCafe} source={logo} />
-      <View style={styles.legenda}>
-        <Text style={styles.legendaL}>Defina uma nova senha para sua conta</Text>
-      </View>
-      <View style={styles.blck1}>
+      <Image source={logo} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.titulo}>Recuperar acesso</Text>
+      <Text style={styles.legenda}>
+        Informe seu e-mail e defina uma nova senha.
+      </Text>
+
+      <View style={styles.card}>
+        <Text style={styles.label}>E-mail</Text>
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="white"
-          autoCapitalize="none"
-          keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          placeholder="voce@email.com"
+          placeholderTextColor={colors.placeholder}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
+
+        <Text style={styles.label}>Nova senha</Text>
         <TextInput
           style={styles.input}
-          placeholder="Nova senha"
-          placeholderTextColor="white"
-          secureTextEntry
           value={novaSenha}
           onChangeText={setNovaSenha}
+          secureTextEntry
+          placeholder="••••••••"
+          placeholderTextColor={colors.placeholder}
         />
+
+        <TouchableOpacity style={styles.bt} onPress={recuperar} disabled={enviando}>
+          {enviando
+            ? <ActivityIndicator color={colors.textInverse} />
+            : <Text style={styles.btTxt}>Salvar nova senha</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 14, alignItems: 'center' }}>
+          <Text style={{ color: colors.primary, fontWeight: '600' }}>Voltar para login</Text>
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={recuperar}
-        disabled={enviando}
-      >
-        {enviando ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.inscrevase}>Enviar</Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.voltar}>Voltar para login</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#4B0000',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    flex: 1, backgroundColor: colors.background,
+    padding: spacing.lg, alignItems: 'center', justifyContent: 'center',
   },
-  meuCafe: {
-    height: 120,
-    width: 120,
-    marginBottom: 30,
-  },
+  logo: { width: 90, height: 90, marginBottom: 12 },
+  titulo: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  legenda: { color: colors.textSecondary, marginTop: 4, marginBottom: 20, textAlign: 'center' },
+  card: { width: '100%', backgroundColor: colors.surface, padding: spacing.lg, borderRadius: radius.lg },
+  label: { color: colors.textSecondary, fontSize: 12, marginTop: 8, marginBottom: 4 },
   input: {
-    borderBottomWidth: 1,
-    padding: 10,
-    borderColor: 'white',
-    color: 'white',
-    width: 240,
-    marginBottom: 8,
+    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder,
+    borderRadius: radius.md, padding: 12, color: colors.textPrimary,
   },
-  blck1: {
-    marginBottom: 24,
-    alignItems: 'flex-start',
+  bt: {
+    backgroundColor: colors.primary, paddingVertical: 14,
+    borderRadius: radius.md, alignItems: 'center', marginTop: 18,
   },
-  button: {
-    backgroundColor: '#900',
-    paddingHorizontal: 30,
-    paddingVertical: 10,
-    borderRadius: 4,
-    marginBottom: 18,
-  },
-  inscrevase: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  legenda: {
-    marginBottom: 18,
-  },
-  legendaL: {
-    color: 'white',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  voltar: {
-    color: 'white',
-    textDecorationLine: 'underline',
-    fontSize: 12,
-  },
+  btTxt: { color: colors.textInverse, fontWeight: '700' },
 });
