@@ -11,6 +11,12 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Cart, Orders, Addresses } from './services/storage';
 import { gerarReciboPdf } from './services/reciboPdf';
+import { colors, spacing, radius, shadow } from './theme/theme';
+
+function formatPeso(g) {
+  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
+  return `${g} g`;
+}
 
 export default function FinalizarPedido({ navigation }) {
   const [itens, setItens] = useState([]);
@@ -24,60 +30,32 @@ export default function FinalizarPedido({ navigation }) {
     setTotal(cart.reduce((acc, item) => acc + Number(item.preco || 0), 0));
     const ends = await Addresses.list();
     setEnderecos(ends);
-    if (ends.length > 0 && !enderecoSelecionado) {
-      setEnderecoSelecionado(ends[0]);
-    }
+    if (ends.length > 0 && !enderecoSelecionado) setEnderecoSelecionado(ends[0]);
   }, [enderecoSelecionado]);
 
-  useFocusEffect(
-    useCallback(() => {
-      carregar();
-    }, [carregar])
-  );
+  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
   async function finalizar() {
-    if (itens.length === 0) {
-      Alert.alert('Atenção', 'Carrinho vazio.');
-      return;
-    }
-    if (!enderecoSelecionado) {
-      Alert.alert(
-        'Endereço',
-        'Cadastre um endereço de entrega antes de finalizar.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Cadastrar',
-            onPress: () => navigation.navigate('EditarEndereco', {}),
-          },
-        ]
-      );
-      return;
-    }
+    if (itens.length === 0) return Alert.alert('Atenção', 'Carrinho vazio.');
+    if (!enderecoSelecionado)
+      return Alert.alert('Endereço', 'Cadastre um endereço de entrega antes de finalizar.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cadastrar', onPress: () => navigation.navigate('EditarEndereco', {}) },
+      ]);
 
-    const pedido = await Orders.add({
-      itens,
-      total,
-      endereco: enderecoSelecionado,
-    });
+    const pedido = await Orders.add({ itens, total, endereco: enderecoSelecionado });
     await Cart.clear();
 
     Alert.alert(
       'Pedido enviado!',
       `Seu pedido #${pedido.id.slice(-5)} foi registrado. Deseja gerar o recibo em PDF?`,
       [
-        {
-          text: 'Não',
-          onPress: () => navigation.navigate('MeusPedidos'),
-        },
+        { text: 'Não', onPress: () => navigation.navigate('MeusPedidos') },
         {
           text: 'Gerar PDF',
           onPress: async () => {
-            try {
-              await gerarReciboPdf(pedido);
-            } catch (e) {
-              Alert.alert('PDF', 'Não foi possível gerar o PDF.');
-            }
+            try { await gerarReciboPdf(pedido); }
+            catch (e) { Alert.alert('PDF', 'Não foi possível gerar o PDF.'); }
             navigation.navigate('MeusPedidos');
           },
         },
@@ -90,7 +68,7 @@ export default function FinalizarPedido({ navigation }) {
       <View style={styles.itemBox}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <Text style={styles.itemDetalhe}>
-          {item.quantidade}g · R$ {Number(item.preco).toFixed(2)}
+          {formatPeso(item.quantidade)} · R$ {Number(item.preco).toFixed(2)}
         </Text>
       </View>
     );
@@ -114,10 +92,7 @@ export default function FinalizarPedido({ navigation }) {
 
       <Text style={styles.subtitulo}>Endereço de entrega</Text>
       {enderecos.length === 0 ? (
-        <TouchableOpacity
-          style={styles.btCadastrar}
-          onPress={() => navigation.navigate('EditarEndereco', {})}
-        >
+        <TouchableOpacity style={styles.btCadastrar} onPress={() => navigation.navigate('EditarEndereco', {})}>
           <Text style={styles.btCadastrarTxt}>+ Cadastrar endereço</Text>
         </TouchableOpacity>
       ) : (
@@ -130,15 +105,13 @@ export default function FinalizarPedido({ navigation }) {
                 style={[styles.enderecoCard, ativo && styles.enderecoAtivo]}
                 onPress={() => setEnderecoSelecionado(end)}
               >
-                <Text
-                  style={[styles.enderecoTitulo, ativo && { color: 'white' }]}
-                >
+                <Text style={[styles.enderecoTitulo, ativo && { color: colors.textInverse }]}>
                   {end.apelido || 'Endereço'}
                 </Text>
-                <Text style={[styles.enderecoTxt, ativo && { color: 'white' }]}>
+                <Text style={[styles.enderecoTxt, ativo && { color: colors.textInverse }]}>
                   {end.rua}, {end.numero}
                 </Text>
-                <Text style={[styles.enderecoTxt, ativo && { color: 'white' }]}>
+                <Text style={[styles.enderecoTxt, ativo && { color: colors.textInverse }]}>
                   {end.cidade}/{end.estado}
                 </Text>
               </TouchableOpacity>
@@ -160,71 +133,44 @@ export default function FinalizarPedido({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    padding: 14,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subtitulo: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4B0000',
-    marginTop: 12,
-    marginBottom: 6,
-  },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  titulo: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  subtitulo: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginTop: 14, marginBottom: 6 },
   itemBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingVertical: 8, borderBottomWidth: 1, borderColor: colors.divider,
   },
-  itemNome: { fontWeight: 'bold', color: '#333' },
-  itemDetalhe: { color: '#666' },
-  vazio: { color: '#999', fontStyle: 'italic' },
+  itemNome: { fontWeight: '700', color: colors.textPrimary },
+  itemDetalhe: { color: colors.textSecondary },
+  vazio: { color: colors.textSecondary, marginVertical: 8 },
+
   btCadastrar: {
-    backgroundColor: '#4B0000',
-    paddingVertical: 10,
-    borderRadius: 4,
-    alignItems: 'center',
+    padding: spacing.md, backgroundColor: colors.primaryLight,
+    borderRadius: radius.md, alignItems: 'center',
   },
-  btCadastrarTxt: { color: 'white', fontWeight: 'bold' },
+  btCadastrarTxt: { color: colors.primary, fontWeight: '700' },
+
   enderecoCard: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 6,
-    marginRight: 8,
-    minWidth: 160,
-    backgroundColor: '#fafafa',
+    backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: radius.md, marginRight: 8, minWidth: 180,
+    ...shadow.card,
   },
-  enderecoAtivo: { backgroundColor: '#4B0000', borderColor: '#4B0000' },
-  enderecoTitulo: { fontWeight: 'bold', color: '#4B0000' },
-  enderecoTxt: { color: '#444', fontSize: 12 },
+  enderecoAtivo: { backgroundColor: colors.primary },
+  enderecoTitulo: { fontWeight: '700', color: colors.textPrimary },
+  enderecoTxt: { color: colors.textSecondary, fontSize: 12 },
+
   totalBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 18,
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    paddingTop: 12,
+    marginTop: 18, paddingVertical: 12,
+    borderTopWidth: 1, borderColor: colors.divider,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  totalLabel: { fontSize: 16, color: '#666' },
-  totalValor: { fontSize: 22, fontWeight: 'bold', color: '#4B0000' },
+  totalLabel: { color: colors.textSecondary, fontSize: 12 },
+  totalValor: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+
   btFinalizar: {
-    marginTop: 16,
-    backgroundColor: '#4B0000',
-    paddingVertical: 14,
-    borderRadius: 4,
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 14, borderRadius: radius.md,
+    alignItems: 'center', marginTop: 10,
   },
-  btFinalizarTxt: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  btFinalizarTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
 });

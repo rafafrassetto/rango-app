@@ -8,9 +8,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import logo from '../assets/Logo.png';
 import { Session } from './services/storage';
+import { colors, spacing, radius, shadow } from './theme/theme';
 
 const API_URL = 'http://localhost:3000';
 
@@ -30,10 +34,7 @@ export default function Login({ navigation }) {
     try {
       const response = await fetch(`${API_URL}/Login`, {
         method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
       });
       const json = await response.json();
@@ -45,7 +46,6 @@ export default function Login({ navigation }) {
         navigation.navigate('Home');
       }
     } catch (e) {
-      // fallback offline
       const local = await Session.get();
       if (local && local.email === email && local.senha === senha) {
         await Session.set({ ...local });
@@ -53,7 +53,7 @@ export default function Login({ navigation }) {
       } else {
         Alert.alert(
           'Servidor indisponível',
-          'Não foi possível conectar ao servidor. Use uma conta cadastrada localmente ou verifique a conexão.'
+          'Não foi possível conectar. Use uma conta cadastrada localmente ou verifique a conexão.'
         );
       }
     } finally {
@@ -62,111 +62,152 @@ export default function Login({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <Image style={styles.meuCafe} source={logo} />
-      <View style={styles.blck1}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          onChangeText={setEmail}
-          value={email}
-          placeholderTextColor="white"
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          secureTextEntry
-          style={styles.input}
-          placeholder="Senha"
-          onChangeText={setSenha}
-          value={senha}
-          placeholderTextColor="white"
-          color="white"
-        />
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Cabeçalho com logo preservada e fundo vermelho de marca */}
+        <View style={styles.hero}>
+          <Image style={styles.logo} source={logo} resizeMode="contain" />
+          <Text style={styles.heroTitulo}>Rango App</Text>
+          <Text style={styles.heroSub}>Peça do jeito que cabe na sua fome.</Text>
+        </View>
+
+        {/* Card branco com os campos, estilo iFood */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitulo}>Acesse sua conta</Text>
+
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="voce@email.com"
+            onChangeText={setEmail}
+            value={email}
+            placeholderTextColor={colors.placeholder}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+
+          <Text style={styles.label}>Senha</Text>
+          <TextInput
+            secureTextEntry
+            style={styles.input}
+            placeholder="••••••••"
+            onChangeText={setSenha}
+            value={senha}
+            placeholderTextColor={colors.placeholder}
+          />
+
+          <TouchableOpacity
+            style={styles.linkEsqueceu}
+            onPress={() => navigation.navigate('Esqueceu')}
+          >
+            <Text style={styles.linkEsqueceuTxt}>Esqueceu a senha?</Text>
+          </TouchableOpacity>
+
+          {message ? <Text style={styles.erro}>{message}</Text> : null}
+
+          <TouchableOpacity
+            style={styles.btPrincipal}
+            onPress={entrar}
+            disabled={carregando}
+          >
+            {carregando
+              ? <ActivityIndicator color={colors.textInverse} />
+              : <Text style={styles.btPrincipalTxt}>Entrar</Text>}
+          </TouchableOpacity>
+
+          <View style={styles.divisor}>
+            <View style={styles.linhaDiv} />
+            <Text style={styles.divTxt}>ou</Text>
+            <View style={styles.linhaDiv} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.btSecundario}
+            onPress={() => navigation.navigate('Inscreva')}
+          >
+            <Text style={styles.btSecundarioTxt}>Criar conta</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Acesso restaurante */}
         <TouchableOpacity
-          style={styles.buttonesqueceu}
-          onPress={() => navigation.navigate('Esqueceu')}
+          style={styles.linkRest}
+          onPress={() => navigation.navigate('LoginRestaurante')}
         >
-          <Text style={styles.esqueceu}>Esqueceu a senha ?</Text>
+          <Text style={styles.linkRestTxt}>Sou restaurante · Entrar pelo painel</Text>
         </TouchableOpacity>
-      </View>
-
-      {message ? <Text style={styles.erro}>{message}</Text> : null}
-
-      <TouchableOpacity
-        style={styles.buttonentrar}
-        onPress={entrar}
-        disabled={carregando}
-      >
-        {carregando ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.entrar}>Entrar</Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Inscreva')}
-      >
-        <Text style={styles.inscrevase}>Inscreva-se</Text>
-      </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flexGrow: 1, backgroundColor: colors.background },
+  hero: {
+    backgroundColor: colors.primary,
+    paddingTop: 60,
+    paddingBottom: 40,
     alignItems: 'center',
-    backgroundColor: '#4B0000',
-    justifyContent: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  meuCafe: {
-    height: 150,
-    width: 150,
-    marginBottom: 60,
+  logo: { width: 110, height: 110, marginBottom: 8 },
+  heroTitulo: { color: colors.textInverse, fontSize: 22, fontWeight: '700' },
+  heroSub: { color: '#FFD8DA', fontSize: 13, marginTop: 4 },
+
+  card: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    marginTop: -20,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    ...shadow.card,
   },
+  cardTitulo: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 14 },
+
+  label: { fontSize: 12, color: colors.textSecondary, marginTop: 8, marginBottom: 4 },
   input: {
-    borderBottomWidth: 1,
-    padding: 10,
-    borderColor: 'white',
-    color: 'white',
-    width: 240,
+    backgroundColor: colors.inputBg,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: colors.textPrimary,
+    fontSize: 15,
   },
-  blck1: {
-    marginBottom: 40,
-    alignItems: 'flex-start',
+
+  linkEsqueceu: { alignSelf: 'flex-end', marginTop: 8 },
+  linkEsqueceuTxt: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+
+  erro: { color: colors.danger, marginTop: 8 },
+
+  btPrincipal: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    marginTop: 18,
   },
-  esqueceu: {
-    marginTop: 16,
-    color: 'white',
-    fontSize: 12,
-    textAlign: 'right',
+  btPrincipalTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
+
+  divisor: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 },
+  linhaDiv: { flex: 1, height: 1, backgroundColor: colors.divider },
+  divTxt: { marginHorizontal: 10, color: colors.textMuted, fontSize: 12 },
+
+  btSecundario: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    alignItems: 'center',
   },
-  buttonesqueceu: {
-    alignSelf: 'flex-end',
-  },
-  button: {
-    paddingVertical: 8,
-  },
-  inscrevase: {
-    color: 'white',
-    textDecorationLine: 'underline',
-  },
-  buttonentrar: {
-    backgroundColor: '#900',
-    paddingHorizontal: 32,
-    paddingVertical: 10,
-    borderRadius: 4,
-    marginBottom: 14,
-  },
-  entrar: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  erro: {
-    color: '#ffaaaa',
-    marginBottom: 8,
-  },
+  btSecundarioTxt: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+
+  linkRest: { alignItems: 'center', padding: spacing.lg, marginTop: 8 },
+  linkRestTxt: { color: colors.textSecondary, fontSize: 13, textDecorationLine: 'underline' },
 });
