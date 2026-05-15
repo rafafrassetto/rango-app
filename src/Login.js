@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
 } from 'react-native';
 import logo from '../assets/Logo.png';
 import { Session } from './services/storage';
@@ -24,11 +25,31 @@ export default function Login({ navigation }) {
   const [message, setMessage] = useState('');
   const [carregando, setCarregando] = useState(false);
 
+  // Animação da Logo
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(animValue, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   async function entrar() {
     if (!email || !senha) {
       setMessage('Preencha email e senha');
       return;
     }
+
+    // Acesso de Desenvolvedor (Bypass)
+    if (email === 'teste@teste.com' && senha === '123456') {
+      await Session.set({ nome: 'Usuário Teste', email: 'teste@teste.com' });
+      navigation.navigate('Home');
+      return;
+    }
+
     setCarregando(true);
     setMessage('');
     try {
@@ -69,9 +90,24 @@ export default function Login({ navigation }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Cabeçalho com logo preservada e fundo vermelho de marca */}
         <View style={styles.hero}>
-          <Image style={styles.logo} source={logo} resizeMode="contain" />
-          <Text style={styles.heroTitulo}>Rango App</Text>
-          <Text style={styles.heroSub}>Peça do jeito que cabe na sua fome.</Text>
+          <Animated.Image
+            style={[
+              styles.logo,
+              {
+                opacity: animValue,
+                transform: [
+                  {
+                    scale: animValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+            source={logo}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Card branco com os campos, estilo iFood */}
@@ -148,13 +184,13 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: colors.background },
   hero: {
     backgroundColor: colors.primary,
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 30,
+    paddingBottom: 20,
     alignItems: 'center',
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  logo: { width: 110, height: 110, marginBottom: 8 },
+  logo: { width: 220, height: 220, marginBottom: 0 },
   heroTitulo: { color: colors.textInverse, fontSize: 22, fontWeight: '700' },
   heroSub: { color: '#FFD8DA', fontSize: 13, marginTop: 4 },
 

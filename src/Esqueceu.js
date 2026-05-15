@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,9 +8,13 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import logo from '../assets/Logo.png';
-import { colors, spacing, radius } from './theme/theme';
+import { colors, spacing, radius, shadow } from './theme/theme';
 
 const API_URL = 'http://localhost:3000';
 
@@ -18,6 +22,18 @@ export default function Esqueceu({ navigation }) {
   const [email, setEmail] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  // Animação da Logo
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(animValue, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   async function recuperar() {
     if (!email || !novaSenha) {
@@ -43,66 +59,103 @@ export default function Esqueceu({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <Image source={logo} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.titulo}>Recuperar acesso</Text>
-      <Text style={styles.legenda}>
-        Informe seu e-mail e defina uma nova senha.
-      </Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.hero}>
+          <Animated.Image
+            source={logo}
+            style={[
+              styles.logo,
+              {
+                opacity: animValue,
+                transform: [
+                  {
+                    scale: animValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+            resizeMode="contain"
+          />
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="voce@email.com"
-          placeholderTextColor={colors.placeholder}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+        <View style={styles.card}>
+          <Text style={styles.cardTitulo}>Recuperar acesso</Text>
+          <Text style={styles.legenda}>Defina sua nova senha abaixo.</Text>
 
-        <Text style={styles.label}>Nova senha</Text>
-        <TextInput
-          style={styles.input}
-          value={novaSenha}
-          onChangeText={setNovaSenha}
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor={colors.placeholder}
-        />
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="voce@email.com"
+            placeholderTextColor={colors.placeholder}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-        <TouchableOpacity style={styles.bt} onPress={recuperar} disabled={enviando}>
-          {enviando
-            ? <ActivityIndicator color={colors.textInverse} />
-            : <Text style={styles.btTxt}>Salvar nova senha</Text>}
-        </TouchableOpacity>
+          <Text style={styles.label}>Nova senha</Text>
+          <TextInput
+            style={styles.input}
+            value={novaSenha}
+            onChangeText={setNovaSenha}
+            secureTextEntry
+            placeholder="••••••••"
+            placeholderTextColor={colors.placeholder}
+          />
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 14, alignItems: 'center' }}>
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>Voltar para login</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <TouchableOpacity style={styles.bt} onPress={recuperar} disabled={enviando}>
+            {enviando
+              ? <ActivityIndicator color={colors.textInverse} />
+              : <Text style={styles.btTxt}>Salvar nova senha</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkVoltar}>
+            <Text style={styles.linkVoltarTxt}>Voltar para o login</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: colors.background,
-    padding: spacing.lg, alignItems: 'center', justifyContent: 'center',
+  container: { flexGrow: 1, backgroundColor: colors.background },
+  hero: {
+    backgroundColor: colors.primary,
+    paddingTop: 30,
+    paddingBottom: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  logo: { width: 90, height: 90, marginBottom: 12 },
-  titulo: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
-  legenda: { color: colors.textSecondary, marginTop: 4, marginBottom: 20, textAlign: 'center' },
-  card: { width: '100%', backgroundColor: colors.surface, padding: spacing.lg, borderRadius: radius.lg },
+  logo: { width: 220, height: 220 },
+  card: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    marginTop: -20,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    ...shadow.card,
+  },
+  cardTitulo: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  legenda: { color: colors.textSecondary, fontSize: 13, marginBottom: 14 },
   label: { color: colors.textSecondary, fontSize: 12, marginTop: 8, marginBottom: 4 },
   input: {
     backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder,
-    borderRadius: radius.md, padding: 12, color: colors.textPrimary,
+    borderRadius: radius.md, padding: 12, color: colors.textPrimary, fontSize: 15,
   },
   bt: {
     backgroundColor: colors.primary, paddingVertical: 14,
     borderRadius: radius.md, alignItems: 'center', marginTop: 18,
   },
   btTxt: { color: colors.textInverse, fontWeight: '700' },
+  linkVoltar: { marginTop: 16, alignItems: 'center' },
+  linkVoltarTxt: { color: colors.primary, fontWeight: '600', fontSize: 14 },
 });
