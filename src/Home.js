@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Image,
   StyleSheet,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
 import cacarola from '../assets/cacarola.png';
 import sabores from '../assets/sabores.png';
 import rest from '../assets/rest.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
+import { Addresses } from './services/storage';
 
 const RESTAURANTES = [
   { id: '1', nome: 'Caçarola Restaurante', dist: '1,5 KM', img: cacarola, taxa: 'Grátis', rating: 4.7 },
@@ -20,18 +22,39 @@ const RESTAURANTES = [
 ];
 
 export default function Home({ navigation }) {
+  const [enderecoAtual, setEnderecoAtual] = useState('Buscando endereço...');
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const lista = await Addresses.list();
+        if (lista.length > 0) {
+          // Pega o último cadastrado ou o que estiver na lista
+          const e = lista[lista.length - 1];
+          setEnderecoAtual(`${e.rua}, ${e.numero}`);
+        } else {
+          setEnderecoAtual('Cadastrar endereço');
+        }
+      })();
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header tipo "para você" */}
-        <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.header}
+          onPress={() => navigation.navigate('MeusEnderecos')}
+          activeOpacity={0.7}
+        >
           <Text style={styles.headerEntrega}>Entrega em</Text>
           <View style={styles.headerLinha}>
             <Icon name="map-pin" size={16} color={colors.primary} />
-            <Text style={styles.headerEndereco} numberOfLines={1}>Meu endereço atual</Text>
+            <Text style={styles.headerEndereco} numberOfLines={1}>{enderecoAtual}</Text>
             <Icon name="chevron-down" size={16} color={colors.textSecondary} />
           </View>
-        </View>
+        </TouchableOpacity>
 
         <Text style={styles.tituloSecao}>Restaurantes próximos</Text>
 

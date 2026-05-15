@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, View, Text, TextInput, TouchableOpacity, Image,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Animated,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
 import logo from '../../assets/Logo.png';
@@ -14,8 +14,28 @@ export default function LoginRestaurante({ navigation }) {
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
 
+  // Animação da Logo
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(animValue, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   async function entrar() {
     if (!email || !senha) return setErro('Preencha e-mail e senha.');
+
+    // Acesso de Desenvolvedor (Bypass)
+    if (email === 'teste@teste.com' && senha === '123456') {
+      await RestauranteAuth.setSession({ restaurante: 'Restaurante Teste', email: 'teste@teste.com' });
+      navigation.reset({ index: 0, routes: [{ name: 'PainelRestaurante' }] });
+      return;
+    }
+
     setCarregando(true); setErro('');
     try {
       const r = await RestauranteAuth.login(email.trim(), senha);
@@ -43,9 +63,24 @@ export default function LoginRestaurante({ navigation }) {
             <Icon name="briefcase" size={14} color={colors.textInverse} />
             <Text style={styles.badgeTxt}>ÁREA DO RESTAURANTE</Text>
           </View>
-          <Image source={logo} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.heroTitulo}>Painel do parceiro</Text>
-          <Text style={styles.heroSub}>Gerencie pedidos, cardápio e regras de peso.</Text>
+          <Animated.Image
+            source={logo}
+            style={[
+              styles.logo,
+              {
+                opacity: animValue,
+                transform: [
+                  {
+                    scale: animValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.card}>
@@ -99,7 +134,7 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: colors.background },
   hero: {
     backgroundColor: '#2B2B2B', // tom mais corporativo no painel
-    paddingTop: 50, paddingBottom: 40, alignItems: 'center',
+    paddingTop: 30, paddingBottom: 20, alignItems: 'center',
     borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
   },
   badge: {
@@ -108,7 +143,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill, marginBottom: 10,
   },
   badgeTxt: { color: colors.textInverse, fontSize: 10, fontWeight: '700' },
-  logo: { width: 80, height: 80, marginBottom: 6 },
+  logo: { width: 180, height: 180, marginBottom: 0 },
   heroTitulo: { color: colors.textInverse, fontSize: 20, fontWeight: '700' },
   heroSub: { color: '#C9C9C9', fontSize: 12, marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
 
