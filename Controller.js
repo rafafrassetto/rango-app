@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -10,40 +12,32 @@ app.use(bodyParser.json());
 
 const port = process.env.PORT || 3000;
 
-const User = models.User;
-const Pedidos = models.Pedidos;
-const Cardapio = models.Cardapio;
+const { User, Restaurant, Address, Dish, Order, OrderItem, sequelize } = models;
 
-// =================== USUÁRIO (CRUD) ===================
+// =================== USUÁRIO ===================
 app.post('/create', async (req, res) => {
   try {
-    const reqs = await User.create({
+    await User.create({
       nome: req.body.nome,
       email: req.body.email,
       senha: req.body.senha,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
-    if (reqs) {
-      res.send(JSON.stringify('Cadastrado com sucesso!'));
-    } else {
-      res.send(JSON.stringify('Erro ao cadastrar'));
-    }
+    res.send(JSON.stringify('Cadastrado com sucesso!'));
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).send(JSON.stringify('E-mail já cadastrado'));
+    }
+    res.status(500).send(JSON.stringify('Erro ao cadastrar'));
   }
 });
 
 app.post('/Login', async (req, res) => {
   try {
-    const response = await User.findOne({
+    const user = await User.findOne({
       where: { email: req.body.email, senha: req.body.senha },
     });
-    if (response == null) {
-      res.send(JSON.stringify('error'));
-    } else {
-      res.send(response);
-    }
+    if (!user) return res.send(JSON.stringify('error'));
+    res.send(user);
   } catch (e) {
     res.status(500).send(JSON.stringify('error'));
   }
@@ -52,7 +46,7 @@ app.post('/Login', async (req, res) => {
 app.get('/users', async (req, res) => {
   try {
     const lista = await User.findAll({
-      attributes: ['id', 'nome', 'email', 'createdAt'],
+      attributes: ['id', 'nome', 'email', 'created_at'],
     });
     res.json(lista);
   } catch (e) {
@@ -62,15 +56,12 @@ app.get('/users', async (req, res) => {
 
 app.put('/update', async (req, res) => {
   try {
-    const response = await User.update(
+    const [count] = await User.update(
       { senha: req.body.novaSenha },
       { where: { email: req.body.email } }
     );
-    if (response) {
-      res.send(JSON.stringify('Senha atualizada com sucesso!'));
-    } else {
-      res.send(JSON.stringify('Erro ao atualizar'));
-    }
+    if (count) return res.send(JSON.stringify('Senha atualizada com sucesso!'));
+    res.status(404).send(JSON.stringify('Usuário não encontrado'));
   } catch (e) {
     res.status(500).send(JSON.stringify('Erro interno'));
   }
@@ -78,116 +69,246 @@ app.put('/update', async (req, res) => {
 
 app.delete('/delete', async (req, res) => {
   try {
-    const response = await User.destroy({
-      where: { email: req.body.email },
+    const count = await User.destroy({ where: { email: req.body.email } });
+    if (count) return res.send(JSON.stringify('Usuario deletado com sucesso!'));
+    res.status(404).send(JSON.stringify('Usuário não encontrado'));
+  } catch (e) {
+    res.status(500).send(JSON.stringify('Erro interno'));
+  }
+});
+
+// =================== RESTAURANTES ===================
+app.post('/restaurants', async (req, res) => {
+  try {
+    const novo = await Restaurant.create({
+      nome: req.body.nome,
+      email: req.body.email,
+      telefone: req.body.telefone,
+      cnpj: req.body.cnpj,
+      senha: req.body.senha,
     });
-    if (response) {
-      res.send(JSON.stringify('Usuario deletado com sucesso!'));
-    } else {
-      res.send(JSON.stringify('Erro ao deletar'));
+    res.status(201).json(novo);
+  } catch (e) {
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ erro: 'E-mail ou CNPJ já cadastrado' });
     }
-  } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro ao cadastrar restaurante' });
   }
 });
 
-// =================== PEDIDOS (CRUD) ===================
-app.get('/pedidos', async (req, res) => {
+app.post('/restaurants/login', async (req, res) => {
   try {
-    const lista = await Pedidos.findAll();
+    const r = await Restaurant.findOne({
+      where: { email: req.body.email, senha: req.body.senha },
+    });
+    if (!r) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    const { senha, ...semSenha } = r.toJSON();
+    res.json(semSenha);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+app.get('/restaurants/:id', async (req, res) => {
+  try {
+    const r = await Restaurant.findByPk(req.params.id, {
+      attributes: { exclude: ['senha'] },
+    });
+    if (!r) return res.status(404).json({ erro: 'Não encontrado' });
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// =================== ENDEREÇOS ===================
+app.get('/users/:userId/addresses', async (req, res) => {
+  try {
+    const lista = await Address.findAll({ where: { user_id: req.params.userId } });
     res.json(lista);
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
-app.post('/pedidos', async (req, res) => {
+app.post('/users/:userId/addresses', async (req, res) => {
   try {
-    const novo = await Pedidos.create({
-      Peso: req.body.Peso,
-      Grama: req.body.Grama,
-      idPedido: req.body.idPedido,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const novo = await Address.create({
+      user_id: req.params.userId,
+      apelido: req.body.apelido,
+      rua: req.body.rua,
+      numero: req.body.numero,
+      complemento: req.body.complemento,
+      cidade: req.body.cidade,
+      estado: req.body.estado,
+      cep: req.body.cep,
     });
-    res.json(novo);
+    res.status(201).json(novo);
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro ao criar endereço' });
   }
 });
 
-app.put('/pedidos/:id', async (req, res) => {
+app.put('/addresses/:id', async (req, res) => {
   try {
-    const result = await Pedidos.update(
-      {
-        Peso: req.body.Peso,
-        Grama: req.body.Grama,
-        idPedido: req.body.idPedido,
-        updatedAt: new Date(),
-      },
-      { where: { id: req.params.id } }
-    );
-    res.json({ atualizado: !!result[0] });
+    const a = await Address.findByPk(req.params.id);
+    if (!a) return res.status(404).json({ erro: 'Não encontrado' });
+    await a.update(req.body);
+    res.json(a);
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
-app.delete('/pedidos/:id', async (req, res) => {
+app.delete('/addresses/:id', async (req, res) => {
   try {
-    const result = await Pedidos.destroy({ where: { id: req.params.id } });
-    res.json({ excluido: !!result });
+    const count = await Address.destroy({ where: { id: req.params.id } });
+    res.json({ excluido: !!count });
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
-// =================== CARDÁPIO (CRUD) ===================
-app.get('/cardapio', async (req, res) => {
+// =================== CARDÁPIO / DISHES ===================
+app.get('/dishes', async (req, res) => {
   try {
-    const lista = await Cardapio.findAll();
+    const where = {};
+    if (req.query.restaurant_id) where.restaurant_id = req.query.restaurant_id;
+    if (req.query.disponivel != null) where.disponivel = req.query.disponivel === 'true';
+    const lista = await Dish.findAll({ where, order: [['nome', 'ASC']] });
     res.json(lista);
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
-app.post('/cardapio', async (req, res) => {
+app.post('/dishes', async (req, res) => {
   try {
-    const novo = await Cardapio.create({
-      Nome: req.body.Nome,
-      idComida: req.body.idComida,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    res.json(novo);
+    const novo = await Dish.create(req.body);
+    res.status(201).json(novo);
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro ao criar prato' });
   }
 });
 
-app.put('/cardapio/:id', async (req, res) => {
+app.put('/dishes/:id', async (req, res) => {
   try {
-    const result = await Cardapio.update(
-      {
-        Nome: req.body.Nome,
-        idComida: req.body.idComida,
-        updatedAt: new Date(),
-      },
+    const d = await Dish.findByPk(req.params.id);
+    if (!d) return res.status(404).json({ erro: 'Não encontrado' });
+    await d.update(req.body);
+    res.json(d);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+app.delete('/dishes/:id', async (req, res) => {
+  try {
+    const count = await Dish.destroy({ where: { id: req.params.id } });
+    res.json({ excluido: !!count });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// =================== PEDIDOS / ORDERS ===================
+app.get('/orders', async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.user_id) where.user_id = req.query.user_id;
+    if (req.query.status) where.status = req.query.status;
+    const lista = await Order.findAll({
+      where,
+      include: [
+        { model: OrderItem, as: 'items', include: [{ model: Dish, as: 'dish' }] },
+        { model: Address, as: 'address' },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+    res.json(lista);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+app.get('/orders/:id', async (req, res) => {
+  try {
+    const pedido = await Order.findByPk(req.params.id, {
+      include: [
+        { model: OrderItem, as: 'items', include: [{ model: Dish, as: 'dish' }] },
+        { model: Address, as: 'address' },
+        { model: User, as: 'user', attributes: ['id', 'nome', 'email'] },
+      ],
+    });
+    if (!pedido) return res.status(404).json({ erro: 'Não encontrado' });
+    res.json(pedido);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// Cria pedido + itens em uma transação. Espera:
+// { user_id, address_id, total, items: [{ dish_id, quantidade_g, preco_total, ... }] }
+app.post('/orders', async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { user_id, address_id, total, items } = req.body;
+    const pedido = await Order.create(
+      { user_id, address_id, total, status: 'Em preparo' },
+      { transaction: t }
+    );
+    const linhas = (items || []).map((it) => ({
+      order_id: pedido.id,
+      dish_id: it.dish_id,
+      nome_snapshot: it.nome_snapshot,
+      quantidade_g: it.quantidade_g,
+      preco_por_kg_snapshot: it.preco_por_kg_snapshot,
+      preco_total: it.preco_total,
+      observacao: it.observacao,
+    }));
+    if (linhas.length) await OrderItem.bulkCreate(linhas, { transaction: t });
+    await t.commit();
+    const completo = await Order.findByPk(pedido.id, {
+      include: [{ model: OrderItem, as: 'items' }],
+    });
+    res.status(201).json(completo);
+  } catch (e) {
+    await t.rollback();
+    res.status(500).json({ erro: 'Erro ao criar pedido' });
+  }
+});
+
+app.put('/orders/:id/status', async (req, res) => {
+  try {
+    if (!Order.STATUS.includes(req.body.status)) {
+      return res.status(400).json({ erro: 'Status inválido' });
+    }
+    const [count] = await Order.update(
+      { status: req.body.status },
       { where: { id: req.params.id } }
     );
-    res.json({ atualizado: !!result[0] });
+    res.json({ atualizado: !!count });
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
-app.delete('/cardapio/:id', async (req, res) => {
+app.delete('/orders/:id', async (req, res) => {
   try {
-    const result = await Cardapio.destroy({ where: { id: req.params.id } });
-    res.json({ excluido: !!result });
+    const count = await Order.destroy({ where: { id: req.params.id } });
+    res.json({ excluido: !!count });
   } catch (e) {
-    res.status(500).send(JSON.stringify('Erro interno'));
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// =================== HEALTH ===================
+app.get('/health', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (e) {
+    res.status(500).json({ status: 'error', db: 'disconnected' });
   }
 });
 
