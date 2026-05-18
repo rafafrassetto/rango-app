@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import { Session } from './services/storage';
 import { colors, spacing, radius } from './theme/theme';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from './services/api';
 
 export default function Inscreva({ navigation }) {
   const [nome, setNome] = useState('');
@@ -39,12 +38,12 @@ export default function Inscreva({ navigation }) {
         body: JSON.stringify(usuario),
       });
       const ress = await response.json();
-      await Session.set({ nome: usuario.nome, email, senha });
+      await Session.set({ nome: usuario.nome, email });
       Alert.alert('Sucesso', String(ress) || 'Cadastro realizado!', [
         { text: 'OK', onPress: () => navigation.navigate('Login') },
       ]);
     } catch (e) {
-      await Session.set({ nome: usuario.nome, email, senha });
+      await Session.set({ nome: usuario.nome, email });
       Alert.alert(
         'Cadastro local',
         'Servidor offline — sua conta foi salva localmente.',

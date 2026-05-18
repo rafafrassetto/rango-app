@@ -16,8 +16,7 @@ import {
 import logo from '../assets/Logo.png';
 import { Session } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from './services/api';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -63,7 +62,7 @@ export default function Login({ navigation }) {
         setMessage('Usuário ou senha inválidos');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        await Session.set({ nome: json.nome, email: json.email });
+        await Session.set({ id: json.id, nome: json.nome, email: json.email });
         navigation.navigate('Home');
       }
     } catch (e) {
