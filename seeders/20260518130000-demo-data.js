@@ -10,8 +10,8 @@ module.exports = {
         telefone: '(11) 91234-5678',
         cnpj: '12.345.678/0001-90',
         senha: 'restaurante123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         nome: 'Churrascaria Gaúcha',
@@ -19,8 +19,8 @@ module.exports = {
         telefone: '(11) 98765-4321',
         cnpj: '98.765.432/0001-10',
         senha: 'restaurante123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ]);
 
@@ -42,8 +42,8 @@ module.exports = {
         peso_max_g: 1000,
         passo_g: 50,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r1,
@@ -55,8 +55,8 @@ module.exports = {
         peso_max_g: 800,
         passo_g: 50,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r1,
@@ -68,8 +68,8 @@ module.exports = {
         peso_max_g: 1200,
         passo_g: 100,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r1,
@@ -81,8 +81,8 @@ module.exports = {
         peso_max_g: 800,
         passo_g: 50,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r1,
@@ -94,8 +94,8 @@ module.exports = {
         peso_max_g: 600,
         passo_g: 50,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r1,
@@ -107,8 +107,8 @@ module.exports = {
         peso_max_g: 800,
         passo_g: 50,
         disponivel: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ]);
 
@@ -124,8 +124,8 @@ module.exports = {
         peso_max_g: 1500,
         passo_g: 100,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r2,
@@ -137,8 +137,8 @@ module.exports = {
         peso_max_g: 2000,
         passo_g: 100,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r2,
@@ -150,8 +150,8 @@ module.exports = {
         peso_max_g: 1000,
         passo_g: 100,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r2,
@@ -163,8 +163,8 @@ module.exports = {
         peso_max_g: 1200,
         passo_g: 100,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         restaurant_id: r2,
@@ -176,8 +176,8 @@ module.exports = {
         peso_max_g: 800,
         passo_g: 50,
         disponivel: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ]);
 
@@ -187,22 +187,22 @@ module.exports = {
         nome: 'Rafael Frassetto',
         email: 'rafafrass@gmail.com',
         senha: 'teste123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         nome: 'Ana Lima',
         email: 'ana.lima@email.com',
         senha: 'teste123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         nome: 'Carlos Silva',
         email: 'carlos.silva@email.com',
         senha: 'teste123',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ]);
 
@@ -220,8 +220,8 @@ module.exports = {
         cidade: 'São Paulo',
         estado: 'SP',
         cep: '01310-100',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         user_id: user1.id,
@@ -231,8 +231,8 @@ module.exports = {
         cidade: 'São Paulo',
         estado: 'SP',
         cep: '01310-200',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ]);
   },
