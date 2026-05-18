@@ -1,25 +1,21 @@
-// Catálogo de pratos do Rango App.
-// Cada prato tem regras de peso (mínimo, máximo, passo) e preço por kg.
-// Esses dados ficam no AsyncStorage para que o painel do restaurante
-// possa cadastrar e editar pratos sem precisar de recompilar o app.
+// Catálogo de pratos: busca do backend, cache no AsyncStorage, fallback local.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiRequest } from './api';
 
 const KEY = '@rango:catalogo';
 
-// Imagens locais que já existem nos assets
+// Imagens locais (require estático obrigatório no React Native)
 import arrozbranco from '../../assets/arrozbranco2.png';
 import feijaopreto from '../../assets/feijaopreto.png';
 import macarraoTomate from '../../assets/macarraoTomate.png';
 
-// Mapa de imagens (precisa ser estático porque o RN não aceita require dinâmico)
 export const IMAGENS = {
   arrozbranco,
   feijaopreto,
   macarraoTomate,
 };
 
-// Catálogo padrão. Usado na primeira execução, antes do restaurante editar.
 export const CATALOGO_DEFAULT = [
   {
     id: 'arroz-branco',
@@ -56,26 +52,81 @@ export const CATALOGO_DEFAULT = [
   },
 ];
 
+// Normaliza prato do servidor para o shape usado pelas telas.
+function mapServerDish(d) {
+  return {
+    id: String(d.id),
+    nome: d.nome,
+    descricao: d.descricao,
+    imagemKey: d.imagem_key || 'arrozbranco',
+    imagem_url: d.imagem_url || null,
+    precoPorKg: Number(d.preco_por_kg),
+    pesoMinG: d.peso_min_g,
+    pesoMaxG: d.peso_max_g,
+    passoG: d.passo_g,
+    disponivel: d.disponivel !== false,
+    restaurant_id: d.restaurant_id,
+  };
+}
+
 export const Catalogo = {
   async list() {
     try {
+      const lista = await apiRequest('/dishes?disponivel=true');
+      const mapped = lista.map(mapServerDish);
+      await AsyncStorage.setItem(KEY, JSON.stringify(mapped));
+      return mapped;
+    } catch (e) {
       const raw = await AsyncStorage.getItem(KEY);
       if (raw) return JSON.parse(raw);
-      // semeia o catálogo padrão na primeira vez
       await AsyncStorage.setItem(KEY, JSON.stringify(CATALOGO_DEFAULT));
       return CATALOGO_DEFAULT;
+    }
+  },
+
+  async listAll() {
+    try {
+      const lista = await apiRequest('/dishes');
+      const mapped = lista.map(mapServerDish);
+      await AsyncStorage.setItem(KEY, JSON.stringify(mapped));
+      return mapped;
     } catch (e) {
+      const raw = await AsyncStorage.getItem(KEY);
+      if (raw) return JSON.parse(raw);
       return CATALOGO_DEFAULT;
     }
   },
 
   async get(id) {
-    const lista = await this.list();
-    return lista.find((p) => p.id === id);
+    const lista = await this.listAll();
+    return lista.find((p) => String(p.id) === String(id)) || null;
   },
 
   async upsert(prato) {
-    const lista = await this.list();
+    try {
+      const body = {
+        nome: prato.nome,
+        descricao: prato.descricao,
+        imagem_key: prato.imagemKey,
+        imagem_url: prato.imagem_url,
+        preco_por_kg: prato.precoPorKg,
+        peso_min_g: prato.pesoMinG,
+        peso_max_g: prato.pesoMaxG,
+        passo_g: prato.passoG,
+        disponivel: prato.disponivel,
+        restaurant_id: prato.restaurant_id || 1,
+      };
+      let result;
+      const numericId = Number(prato.id);
+      if (prato.id && numericId && !isNaN(numericId)) {
+        result = await apiRequest(`/dishes/${prato.id}`, { method: 'PUT', body });
+      } else {
+        result = await apiRequest('/dishes', { method: 'POST', body });
+      }
+      return mapServerDish(result);
+    } catch (e) { /* fallback local */ }
+
+    const lista = await this.listAll();
     const idx = lista.findIndex((p) => p.id === prato.id);
     if (idx >= 0) lista[idx] = { ...lista[idx], ...prato };
     else lista.push(prato);
@@ -84,9 +135,17 @@ export const Catalogo = {
   },
 
   async remove(id) {
-    const lista = await this.list();
-    const nova = lista.filter((p) => p.id !== id);
-    await AsyncStorage.setItem(KEY, JSON.stringify(nova));
+    try {
+      const numericId = Number(id);
+      if (numericId && !isNaN(numericId)) {
+        await apiRequest(`/dishes/${id}`, { method: 'DELETE' });
+      }
+    } catch (e) { /* fallback */ }
+    const lista = await this.listAll();
+    await AsyncStorage.setItem(
+      KEY,
+      JSON.stringify(lista.filter((p) => String(p.id) !== String(id)))
+    );
   },
 
   async reset() {
@@ -94,8 +153,6 @@ export const Catalogo = {
   },
 };
 
-// Presets de fome para escolha rápida do cliente.
-// A tela aplica o valor respeitando o mín/máx do prato.
 export const PRESETS_FOME = [
   { id: 'pouca',   rotulo: 'Pouca Fome',     descricao: '~300g',  pesoG: 300,  emoji: '🥗' },
   { id: 'normal',  rotulo: 'Fome Normal',    descricao: '~500g',  pesoG: 500,  emoji: '🍽️' },

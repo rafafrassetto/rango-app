@@ -12,8 +12,7 @@ import {
 import Icon from '@expo/vector-icons/Feather';
 import { Session } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from './services/api';
 
 export default function Perfil({ navigation }) {
   const [user, setUser] = useState(null);

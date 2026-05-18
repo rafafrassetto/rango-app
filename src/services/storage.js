@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiRequest } from './api';
 
 const KEYS = {
   CART: '@rango:cart',
@@ -24,8 +25,30 @@ function generateId() {
   return Date.now().toString() + Math.floor(Math.random() * 1000);
 }
 
+// Normaliza pedido do servidor para o shape que as telas esperam.
+function mapServerOrder(o) {
+  return {
+    id: String(o.id),
+    data: o.created_at || new Date().toISOString(),
+    status: o.status,
+    total: Number(o.total),
+    itens: (o.items || []).map((it) => ({
+      id: String(it.id),
+      pratoId: String(it.dish_id),
+      nome: it.nome_snapshot || (it.dish && it.dish.nome) || '',
+      quantidade: it.quantidade_g,
+      preco: Number(it.preco_total),
+      precoPorKg: Number(it.preco_por_kg_snapshot || 0),
+      observacao: it.observacao,
+    })),
+    endereco: o.address || null,
+  };
+}
+
+// =================== CARRINHO (sempre local) ===================
 export const Cart = {
   list: () => readList(KEYS.CART),
+
   add: async (item) => {
     const list = await readList(KEYS.CART);
     const novo = { id: generateId(), ...item };
@@ -33,6 +56,7 @@ export const Cart = {
     await writeList(KEYS.CART, list);
     return novo;
   },
+
   update: async (id, patch) => {
     const list = await readList(KEYS.CART);
     const idx = list.findIndex((p) => p.id === id);
@@ -43,25 +67,73 @@ export const Cart = {
     }
     return null;
   },
+
   remove: async (id) => {
     const list = await readList(KEYS.CART);
-    const novo = list.filter((p) => p.id !== id);
-    await writeList(KEYS.CART, novo);
+    await writeList(KEYS.CART, list.filter((p) => p.id !== id));
   },
+
   clear: () => writeList(KEYS.CART, []),
+
   total: async () => {
     const list = await readList(KEYS.CART);
     return list.reduce((acc, item) => acc + Number(item.preco || 0), 0);
   },
 };
 
+// =================== PEDIDOS (API-primary, AsyncStorage como cache) ===================
 export const Orders = {
-  list: () => readList(KEYS.ORDERS),
-  get: async (id) => {
-    const list = await readList(KEYS.ORDERS);
-    return list.find((p) => p.id === id);
+  // opts.all = true → sem filtro de user (visão restaurante)
+  async list(opts = {}) {
+    try {
+      const session = await Session.get();
+      const query = opts.all || !session?.id ? '' : `?user_id=${session.id}`;
+      const lista = await apiRequest(`/orders${query}`);
+      const mapped = lista.map(mapServerOrder);
+      await writeList(KEYS.ORDERS, mapped);
+      return mapped;
+    } catch (e) {
+      return readList(KEYS.ORDERS);
+    }
   },
-  add: async (pedido) => {
+
+  async get(id) {
+    try {
+      const o = await apiRequest(`/orders/${id}`);
+      return mapServerOrder(o);
+    } catch (e) {
+      const list = await readList(KEYS.ORDERS);
+      return list.find((p) => p.id === String(id));
+    }
+  },
+
+  // pedido: { itens, total, endereco }
+  async add(pedido) {
+    try {
+      const session = await Session.get();
+      if (session?.id) {
+        const body = {
+          user_id: session.id,
+          address_id: pedido.endereco?.id ? Number(pedido.endereco.id) : null,
+          total: pedido.total,
+          items: (pedido.itens || []).map((it) => ({
+            dish_id: Number(it.pratoId) || 1,
+            nome_snapshot: it.nome,
+            quantidade_g: it.quantidade,
+            preco_por_kg_snapshot: it.precoPorKg,
+            preco_total: it.preco,
+            observacao: it.observacao,
+          })),
+        };
+        const novo = await apiRequest('/orders', { method: 'POST', body });
+        const mapped = mapServerOrder(novo);
+        const cache = await readList(KEYS.ORDERS);
+        cache.unshift(mapped);
+        await writeList(KEYS.ORDERS, cache);
+        return mapped;
+      }
+    } catch (e) { /* fallback local */ }
+
     const list = await readList(KEYS.ORDERS);
     const novo = {
       id: generateId(),
@@ -73,9 +145,18 @@ export const Orders = {
     await writeList(KEYS.ORDERS, list);
     return novo;
   },
-  update: async (id, patch) => {
+
+  async update(id, patch) {
+    if (patch.status) {
+      try {
+        await apiRequest(`/orders/${id}/status`, {
+          method: 'PUT',
+          body: { status: patch.status },
+        });
+      } catch (e) { /* fallback local */ }
+    }
     const list = await readList(KEYS.ORDERS);
-    const idx = list.findIndex((p) => p.id === id);
+    const idx = list.findIndex((p) => p.id === String(id));
     if (idx >= 0) {
       list[idx] = { ...list[idx], ...patch };
       await writeList(KEYS.ORDERS, list);
@@ -83,29 +164,70 @@ export const Orders = {
     }
     return null;
   },
-  remove: async (id) => {
+
+  async remove(id) {
+    try {
+      await apiRequest(`/orders/${id}`, { method: 'DELETE' });
+    } catch (e) { /* fallback */ }
     const list = await readList(KEYS.ORDERS);
-    const novo = list.filter((p) => p.id !== id);
-    await writeList(KEYS.ORDERS, novo);
+    await writeList(KEYS.ORDERS, list.filter((p) => p.id !== String(id)));
   },
 };
 
+// =================== ENDEREÇOS (API-primary, AsyncStorage como cache) ===================
 export const Addresses = {
-  list: () => readList(KEYS.ADDRESSES),
-  get: async (id) => {
-    const list = await readList(KEYS.ADDRESSES);
-    return list.find((p) => p.id === id);
+  async list() {
+    try {
+      const session = await Session.get();
+      if (session?.id) {
+        const lista = await apiRequest(`/users/${session.id}/addresses`);
+        await writeList(KEYS.ADDRESSES, lista);
+        return lista;
+      }
+    } catch (e) { /* fallback */ }
+    return readList(KEYS.ADDRESSES);
   },
-  add: async (endereco) => {
+
+  async get(id) {
+    const list = await this.list();
+    return list.find((p) => String(p.id) === String(id)) || null;
+  },
+
+  async add(endereco) {
+    try {
+      const session = await Session.get();
+      if (session?.id) {
+        const novo = await apiRequest(`/users/${session.id}/addresses`, {
+          method: 'POST',
+          body: endereco,
+        });
+        const cache = await readList(KEYS.ADDRESSES);
+        cache.push(novo);
+        await writeList(KEYS.ADDRESSES, cache);
+        return novo;
+      }
+    } catch (e) { /* fallback */ }
     const list = await readList(KEYS.ADDRESSES);
     const novo = { id: generateId(), ...endereco };
     list.push(novo);
     await writeList(KEYS.ADDRESSES, list);
     return novo;
   },
-  update: async (id, patch) => {
+
+  async update(id, patch) {
+    try {
+      const atualizado = await apiRequest(`/addresses/${id}`, {
+        method: 'PUT',
+        body: patch,
+      });
+      const cache = await readList(KEYS.ADDRESSES);
+      const idx = cache.findIndex((p) => String(p.id) === String(id));
+      if (idx >= 0) { cache[idx] = { ...cache[idx], ...atualizado }; }
+      await writeList(KEYS.ADDRESSES, cache);
+      return atualizado;
+    } catch (e) { /* fallback */ }
     const list = await readList(KEYS.ADDRESSES);
-    const idx = list.findIndex((p) => p.id === id);
+    const idx = list.findIndex((p) => String(p.id) === String(id));
     if (idx >= 0) {
       list[idx] = { ...list[idx], ...patch };
       await writeList(KEYS.ADDRESSES, list);
@@ -113,13 +235,17 @@ export const Addresses = {
     }
     return null;
   },
-  remove: async (id) => {
+
+  async remove(id) {
+    try {
+      await apiRequest(`/addresses/${id}`, { method: 'DELETE' });
+    } catch (e) { /* fallback */ }
     const list = await readList(KEYS.ADDRESSES);
-    const novo = list.filter((p) => p.id !== id);
-    await writeList(KEYS.ADDRESSES, novo);
+    await writeList(KEYS.ADDRESSES, list.filter((p) => String(p.id) !== String(id)));
   },
 };
 
+// =================== SESSÃO DO CLIENTE ===================
 export const Session = {
   get: async () => {
     try {
