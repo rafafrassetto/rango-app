@@ -78,6 +78,18 @@ app.delete('/delete', async (req, res) => {
 });
 
 // =================== RESTAURANTES ===================
+app.get('/restaurants', async (req, res) => {
+  try {
+    const lista = await Restaurant.findAll({
+      attributes: { exclude: ['senha'] },
+      order: [['nome', 'ASC']],
+    });
+    res.json(lista);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
 app.post('/restaurants', async (req, res) => {
   try {
     const novo = await Restaurant.create({
@@ -217,10 +229,24 @@ app.get('/orders', async (req, res) => {
     const where = {};
     if (req.query.user_id) where.user_id = req.query.user_id;
     if (req.query.status) where.status = req.query.status;
+
+    const dishWhere = {};
+    if (req.query.restaurant_id) dishWhere.restaurant_id = req.query.restaurant_id;
+
     const lista = await Order.findAll({
       where,
       include: [
-        { model: OrderItem, as: 'items', include: [{ model: Dish, as: 'dish' }] },
+        {
+          model: OrderItem,
+          as: 'items',
+          required: !!req.query.restaurant_id,
+          include: [{
+            model: Dish,
+            as: 'dish',
+            required: !!req.query.restaurant_id,
+            where: req.query.restaurant_id ? dishWhere : undefined,
+          }],
+        },
         { model: Address, as: 'address' },
       ],
       order: [['created_at', 'DESC']],

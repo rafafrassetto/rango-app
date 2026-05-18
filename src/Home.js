@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
@@ -14,27 +15,29 @@ import sabores from '../assets/sabores.png';
 import rest from '../assets/rest.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { Addresses } from './services/storage';
+import { Restaurants } from './services/restaurants';
 
-const RESTAURANTES = [
-  { id: '1', nome: 'Caçarola Restaurante', dist: '1,5 KM', img: cacarola, taxa: 'Grátis', rating: 4.7 },
-  { id: '2', nome: 'Fábrica De Sabores', dist: '3 KM', img: sabores, taxa: 'R$ 4,99', rating: 4.5 },
-  { id: '3', nome: 'Parrilla', dist: '5 KM', img: rest, taxa: 'R$ 6,99', rating: 4.3 },
-];
+const IMG_FALLBACK = [cacarola, sabores, rest];
 
 export default function Home({ navigation }) {
   const [enderecoAtual, setEnderecoAtual] = useState('Buscando endereço...');
+  const [restaurantes, setRestaurantes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
         const lista = await Addresses.list();
         if (lista.length > 0) {
-          // Pega o último cadastrado ou o que estiver na lista
           const e = lista[lista.length - 1];
           setEnderecoAtual(`${e.rua}, ${e.numero}`);
         } else {
           setEnderecoAtual('Cadastrar endereço');
         }
+
+        const rs = await Restaurants.list();
+        setRestaurantes(rs);
+        setCarregando(false);
       })();
     }, [])
   );
@@ -42,7 +45,6 @@ export default function Home({ navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header tipo "para você" */}
         <TouchableOpacity
           style={styles.header}
           onPress={() => navigation.navigate('MeusEnderecos')}
@@ -58,30 +60,37 @@ export default function Home({ navigation }) {
 
         <Text style={styles.tituloSecao}>Restaurantes próximos</Text>
 
-        {RESTAURANTES.map((r) => (
-          <TouchableOpacity
-            key={r.id}
-            style={styles.cardRest}
-            onPress={() => navigation.navigate('CardapioCacarola')}
-            activeOpacity={0.85}
-          >
-            <Image style={styles.imgRest} source={r.img} />
-            <View style={styles.infoRest}>
-              <Text style={styles.nomeRest}>{r.nome}</Text>
-              <View style={styles.linhaInfo}>
-                <Icon name="star" size={12} color={colors.accent} />
-                <Text style={styles.txtSec}>{r.rating}</Text>
-                <Text style={styles.bullet}>·</Text>
-                <Text style={styles.txtSec}>{r.dist}</Text>
-                <Text style={styles.bullet}>·</Text>
-                <Text style={styles.txtSec}>{r.taxa}</Text>
+        {carregando ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
+        ) : restaurantes.length === 0 ? (
+          <Text style={styles.vazio}>Nenhum restaurante disponível no momento.</Text>
+        ) : (
+          restaurantes.map((r, idx) => (
+            <TouchableOpacity
+              key={r.id}
+              style={styles.cardRest}
+              onPress={() =>
+                navigation.navigate('CardapioCacarola', {
+                  restaurantId: r.id,
+                  nome: r.nome,
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <Image style={styles.imgRest} source={IMG_FALLBACK[idx % IMG_FALLBACK.length]} />
+              <View style={styles.infoRest}>
+                <Text style={styles.nomeRest}>{r.nome}</Text>
+                <View style={styles.linhaInfo}>
+                  <Icon name="phone" size={11} color={colors.textSecondary} />
+                  <Text style={styles.txtSec}>{r.telefone || '—'}</Text>
+                </View>
+                <View style={styles.tagAberto}>
+                  <Text style={styles.tagAbertoTxt}>ABERTO</Text>
+                </View>
               </View>
-              <View style={styles.tagAberto}>
-                <Text style={styles.tagAbertoTxt}>ABERTO</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
 
         <Text style={styles.tituloSecao}>Atalhos</Text>
         <View style={styles.atalhosBox}>
@@ -131,6 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 17, fontWeight: '700', color: colors.textPrimary,
     marginTop: spacing.lg, marginBottom: spacing.md,
   },
+  vazio: { color: colors.textSecondary, marginVertical: 12 },
 
   cardRest: {
     flexDirection: 'row',
@@ -145,7 +155,6 @@ const styles = StyleSheet.create({
   nomeRest: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   linhaInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   txtSec: { color: colors.textSecondary, fontSize: 12 },
-  bullet: { color: colors.textMuted, marginHorizontal: 2 },
   tagAberto: {
     alignSelf: 'flex-start',
     backgroundColor: '#E8F5EC',

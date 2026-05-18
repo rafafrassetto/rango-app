@@ -13,15 +13,10 @@ import Icon from '@expo/vector-icons/Feather';
 import { Catalogo, IMAGENS } from './services/catalogo';
 import { colors, spacing, radius, shadow } from './theme/theme';
 
-// Mapeia o id do prato para o nome da rota existente.
-// (Os cadastrados pelo admin caem na rota genérica.)
-const ROTAS_FIXAS = {
-  'arroz-branco': 'Arroz',
-  'feijao-preto': 'Feijao',
-  'macarrao': 'Macarrao',
-};
+export default function CardapioCacarola({ navigation, route }) {
+  const restaurantId = route?.params?.restaurantId;
+  const restaurantNome = route?.params?.nome || 'Restaurante';
 
-export default function CardapioCacarola({ navigation }) {
   const [pratos, setPratos] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -29,17 +24,17 @@ export default function CardapioCacarola({ navigation }) {
     useCallback(() => {
       (async () => {
         setCarregando(true);
-        const lista = await Catalogo.list();
-        setPratos(lista.filter((p) => p.disponivel !== false));
+        const lista = restaurantId
+          ? await Catalogo.listByRestaurant(restaurantId)
+          : await Catalogo.list();
+        setPratos(lista);
         setCarregando(false);
       })();
-    }, [])
+    }, [restaurantId])
   );
 
   function abrirPrato(p) {
-    const rota = ROTAS_FIXAS[p.id];
-    if (rota) navigation.navigate(rota);
-    else navigation.navigate('Arroz', { id: p.id }); // genérico via params
+    navigation.navigate('Arroz', { id: p.id });
   }
 
   if (carregando) {
@@ -53,12 +48,13 @@ export default function CardapioCacarola({ navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}>
-        {/* Banner do restaurante */}
         <View style={styles.banner}>
-          <Text style={styles.bannerTitulo}>Caçarola Restaurante</Text>
+          <Text style={styles.bannerTitulo}>{restaurantNome}</Text>
           <View style={styles.bannerInfo}>
-            <Icon name="star" size={12} color={colors.accent} />
-            <Text style={styles.bannerInfoTxt}>4.7 · 1,5 KM · Entrega grátis</Text>
+            <Icon name="package" size={12} color={colors.textSecondary} />
+            <Text style={styles.bannerInfoTxt}>
+              {pratos.length} {pratos.length === 1 ? 'prato disponível' : 'pratos disponíveis'}
+            </Text>
           </View>
           <View style={styles.bannerTag}>
             <Text style={styles.bannerTagTxt}>Comida por kg</Text>
@@ -67,28 +63,36 @@ export default function CardapioCacarola({ navigation }) {
 
         <Text style={styles.tituloSecao}>Pratos disponíveis</Text>
 
-        {pratos.map((p) => (
-          <TouchableOpacity
-            key={p.id}
-            style={styles.cardPrato}
-            onPress={() => abrirPrato(p)}
-            activeOpacity={0.85}
-          >
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.nome}>{p.nome}</Text>
-              <Text style={styles.descricao} numberOfLines={2}>{p.descricao}</Text>
-              <Text style={styles.preco}>R$ {p.precoPorKg.toFixed(2)} <Text style={styles.precoUnid}>/ kg</Text></Text>
-              <Text style={styles.regra}>
-                {p.pesoMinG}g – {(p.pesoMaxG / 1000).toFixed(2)}kg
-              </Text>
-            </View>
-            <Image
-              source={IMAGENS[p.imagemKey]}
-              style={styles.imagem}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        ))}
+        {pratos.length === 0 ? (
+          <Text style={styles.vazio}>
+            Este restaurante ainda não cadastrou pratos disponíveis.
+          </Text>
+        ) : (
+          pratos.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={styles.cardPrato}
+              onPress={() => abrirPrato(p)}
+              activeOpacity={0.85}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={styles.nome}>{p.nome}</Text>
+                <Text style={styles.descricao} numberOfLines={2}>{p.descricao}</Text>
+                <Text style={styles.preco}>
+                  R$ {p.precoPorKg.toFixed(2)} <Text style={styles.precoUnid}>/ kg</Text>
+                </Text>
+                <Text style={styles.regra}>
+                  {p.pesoMinG}g – {(p.pesoMaxG / 1000).toFixed(2)}kg
+                </Text>
+              </View>
+              <Image
+                source={IMAGENS[p.imagemKey] || IMAGENS.arrozbranco}
+                style={styles.imagem}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       <TouchableOpacity
@@ -122,6 +126,7 @@ const styles = StyleSheet.create({
   bannerTagTxt: { color: colors.primary, fontSize: 11, fontWeight: '700' },
 
   tituloSecao: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
+  vazio: { color: colors.textSecondary, textAlign: 'center', marginTop: 30 },
 
   cardPrato: {
     flexDirection: 'row',

@@ -5,6 +5,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
 import { Catalogo, IMAGENS } from '../services/catalogo';
+import { RestauranteAuth } from '../services/restauranteAuth';
 import { colors, spacing, radius, shadow } from '../theme/theme';
 
 function fmt(g) {
@@ -16,7 +17,12 @@ export default function GerenciarCardapio({ navigation, onChange }) {
   const [pratos, setPratos] = useState([]);
 
   const carregar = useCallback(async () => {
-    setPratos(await Catalogo.list());
+    const sessao = await RestauranteAuth.getSession();
+    if (sessao?.id) {
+      setPratos(await Catalogo.listByRestaurant(sessao.id, { apenasDisponiveis: false }));
+    } else {
+      setPratos([]);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));

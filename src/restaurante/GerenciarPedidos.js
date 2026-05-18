@@ -5,6 +5,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
 import { Orders } from '../services/storage';
+import { RestauranteAuth } from '../services/restauranteAuth';
 import { colors, spacing, radius, shadow } from '../theme/theme';
 
 const STATUS_FLUXO = ['Em preparo', 'Saiu para entrega', 'Entregue'];
@@ -29,7 +30,8 @@ export default function GerenciarPedidos({ onChange }) {
   const [pedidos, setPedidos] = useState([]);
 
   const carregar = useCallback(async () => {
-    const lista = await Orders.list({ all: true });
+    const sessao = await RestauranteAuth.getSession();
+    const lista = await Orders.list({ restaurantId: sessao?.id });
     setPedidos(lista);
   }, []);
 

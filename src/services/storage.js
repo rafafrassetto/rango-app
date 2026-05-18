@@ -83,14 +83,22 @@ export const Cart = {
 
 // =================== PEDIDOS (API-primary, AsyncStorage como cache) ===================
 export const Orders = {
-  // opts.all = true → sem filtro de user (visão restaurante)
+  // opts.restaurantId → pedidos com pratos desse restaurante (visão painel)
+  // opts.all = true → todos os pedidos (admin/debug)
+  // padrão: pedidos do usuário logado
   async list(opts = {}) {
     try {
-      const session = await Session.get();
-      const query = opts.all || !session?.id ? '' : `?user_id=${session.id}`;
-      const lista = await apiRequest(`/orders${query}`);
+      const params = new URLSearchParams();
+      if (opts.restaurantId) {
+        params.set('restaurant_id', opts.restaurantId);
+      } else if (!opts.all) {
+        const session = await Session.get();
+        if (session?.id) params.set('user_id', session.id);
+      }
+      const qs = params.toString() ? `?${params}` : '';
+      const lista = await apiRequest(`/orders${qs}`);
       const mapped = lista.map(mapServerOrder);
-      await writeList(KEYS.ORDERS, mapped);
+      if (!opts.restaurantId) await writeList(KEYS.ORDERS, mapped);
       return mapped;
     } catch (e) {
       return readList(KEYS.ORDERS);

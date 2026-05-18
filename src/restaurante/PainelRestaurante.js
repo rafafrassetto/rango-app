@@ -31,11 +31,13 @@ export default function PainelRestaurante({ navigation }) {
     const r = await RestauranteAuth.getSession();
     setRestaurante(r);
 
-    const pedidos = await Orders.list();
+    const pedidos = r?.id ? await Orders.list({ restaurantId: r.id }) : [];
     const hoje = new Date().toDateString();
     const pedidosHoje = pedidos.filter((p) => new Date(p.data).toDateString() === hoje);
     const faturamento = pedidosHoje.reduce((a, p) => a + Number(p.total || 0), 0);
-    const cat = await Catalogo.list();
+    const cat = r?.id
+      ? await Catalogo.listByRestaurant(r.id, { apenasDisponiveis: false })
+      : [];
 
     setStats({
       pedidosHoje: pedidosHoje.length,

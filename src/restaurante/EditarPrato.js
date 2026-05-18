@@ -76,6 +76,9 @@ export default function EditarPrato({ route, navigation }) {
     if (erro) return Alert.alert('Atenção', erro);
 
     const sessao = await RestauranteAuth.getSession();
+    if (!sessao?.id) {
+      return Alert.alert('Sessão expirada', 'Faça login no painel do restaurante novamente.');
+    }
     const prato = {
       id: id || slugify(nome) || `prato-${Date.now()}`,
       nome: nome.trim(),
@@ -86,7 +89,7 @@ export default function EditarPrato({ route, navigation }) {
       passoG: parseInt(passoG, 10),
       imagemKey,
       disponivel,
-      restaurant_id: sessao?.id || 1,
+      restaurant_id: sessao.id,
     };
 
     try {

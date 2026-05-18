@@ -84,6 +84,24 @@ export const Catalogo = {
     }
   },
 
+  async listByRestaurant(restaurantId, opts = {}) {
+    const apenasDisponiveis = opts.apenasDisponiveis !== false;
+    try {
+      const qs = apenasDisponiveis
+        ? `?restaurant_id=${restaurantId}&disponivel=true`
+        : `?restaurant_id=${restaurantId}`;
+      const lista = await apiRequest(`/dishes${qs}`);
+      return lista.map(mapServerDish);
+    } catch (e) {
+      const raw = await AsyncStorage.getItem(KEY);
+      const cache = raw ? JSON.parse(raw) : [];
+      return cache.filter((p) =>
+        String(p.restaurant_id) === String(restaurantId) &&
+        (!apenasDisponiveis || p.disponivel !== false)
+      );
+    }
+  },
+
   async listAll() {
     try {
       const lista = await apiRequest('/dishes');
