@@ -6,7 +6,7 @@
 //
 // Configure as variáveis no .env (raiz do projeto):
 //   EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-//   EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+//   EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   (ou eyJ... no formato legado)
 //
 // Expo expõe automaticamente vars com prefixo EXPO_PUBLIC_ no bundle.
 
