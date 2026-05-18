@@ -29,7 +29,7 @@ export default function GerenciarPedidos({ onChange }) {
   const [pedidos, setPedidos] = useState([]);
 
   const carregar = useCallback(async () => {
-    const lista = await Orders.list();
+    const lista = await Orders.list({ all: true });
     setPedidos(lista);
   }, []);
 

@@ -15,8 +15,7 @@ import {
 } from 'react-native';
 import logo from '../assets/Logo.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from './services/api';
 
 export default function Esqueceu({ navigation }) {
   const [email, setEmail] = useState('');

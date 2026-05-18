@@ -1,13 +1,11 @@
-// Autenticação local do painel do restaurante.
-// Mantemos os dados em AsyncStorage para o app rodar offline ou
-// enquanto o backend ainda não tem a rota /restaurantes.
+// Autenticação do restaurante: API-primary, AsyncStorage como fallback.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiRequest } from './api';
 
 const KEY_LISTA = '@rango:restaurantes';
 const KEY_SESSAO = '@rango:restaurante-sessao';
 
-// Restaurante padrão para login rápido em demo.
 const DEMO = {
   id: 'demo',
   nome: 'Caçarola Restaurante',
@@ -33,9 +31,21 @@ async function writeList(list) {
 }
 
 export const RestauranteAuth = {
-  async list() { return readList(); },
+  async list() {
+    return readList();
+  },
 
   async register({ nome, email, telefone, cnpj, senha }) {
+    try {
+      const novo = await apiRequest('/restaurants', {
+        method: 'POST',
+        body: { nome, email, telefone, cnpj, senha },
+      });
+      const list = await readList();
+      list.push(novo);
+      await writeList(list);
+      return novo;
+    } catch (e) { /* fallback local */ }
     const list = await readList();
     const novo = {
       id: Date.now().toString(),
@@ -47,6 +57,13 @@ export const RestauranteAuth = {
   },
 
   async login(email, senha) {
+    try {
+      const r = await apiRequest('/restaurants/login', {
+        method: 'POST',
+        body: { email, senha },
+      });
+      return r;
+    } catch (e) { /* fallback local */ }
     const list = await readList();
     return list.find((r) => r.email === email && r.senha === senha) || null;
   },
@@ -55,7 +72,9 @@ export const RestauranteAuth = {
     try {
       const raw = await AsyncStorage.getItem(KEY_SESSAO);
       return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+    } catch (e) {
+      return null;
+    }
   },
 
   async setSession(restaurante) {
@@ -67,13 +86,22 @@ export const RestauranteAuth = {
   },
 
   async update(id, dados) {
+    try {
+      const atualizado = await apiRequest(`/restaurants/${id}`, {
+        method: 'PUT',
+        body: dados,
+      });
+      const sess = await this.getSession();
+      if (sess && String(sess.id) === String(id)) await this.setSession(atualizado);
+      return atualizado;
+    } catch (e) { /* fallback local */ }
+
     const list = await readList();
     const idx = list.findIndex((r) => r.id === id);
     if (idx < 0) return null;
     const atualizado = { ...list[idx], ...dados };
     list[idx] = atualizado;
     await writeList(list);
-    // se for o restaurante logado, atualiza a sessão também
     const sess = await this.getSession();
     if (sess && sess.id === id) await this.setSession(atualizado);
     return atualizado;

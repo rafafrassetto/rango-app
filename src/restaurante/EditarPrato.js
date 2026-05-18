@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
 import { Catalogo, IMAGENS } from '../services/catalogo';
+import { RestauranteAuth } from '../services/restauranteAuth';
 import { colors, spacing, radius, shadow } from '../theme/theme';
 
 // Chaves de imagem disponíveis (precisam ter require estático em catalogo.js)
@@ -74,6 +75,7 @@ export default function EditarPrato({ route, navigation }) {
     const erro = validar();
     if (erro) return Alert.alert('Atenção', erro);
 
+    const sessao = await RestauranteAuth.getSession();
     const prato = {
       id: id || slugify(nome) || `prato-${Date.now()}`,
       nome: nome.trim(),
@@ -84,6 +86,7 @@ export default function EditarPrato({ route, navigation }) {
       passoG: parseInt(passoG, 10),
       imagemKey,
       disponivel,
+      restaurant_id: sessao?.id || 1,
     };
 
     try {
