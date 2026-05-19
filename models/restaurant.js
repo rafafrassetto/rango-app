@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       cnpj: { type: DataTypes.STRING, unique: true },
       senha: { type: DataTypes.STRING, allowNull: false },
       auth_id: { type: DataTypes.UUID, allowNull: true },
+      aberto: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     },
     {
       sequelize,

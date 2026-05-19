@@ -51,6 +51,13 @@ export const Cart = {
 
   add: async (item) => {
     const list = await readList(KEYS.CART);
+    // Se o carrinho já tem itens de outro restaurante, impede
+    if (list.length > 0 && item.restaurantId) {
+      const restauranteAtual = list[0].restaurantId;
+      if (restauranteAtual && restauranteAtual !== item.restaurantId) {
+        throw new Error(`RESTAURANTE_DIFERENTE:${list[0].restaurantNome || 'outro restaurante'}`);
+      }
+    }
     const novo = { id: generateId(), ...item };
     list.push(novo);
     await writeList(KEYS.CART, list);

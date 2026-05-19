@@ -29,6 +29,15 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
       },
+      forma_pagamento: {
+        type: DataTypes.ENUM('dinheiro', 'cartao_credito', 'cartao_debito', 'pix'),
+        allowNull: true,
+      },
+      taxa_entrega: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+      },
     },
     {
       sequelize,

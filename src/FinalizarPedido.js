@@ -23,6 +23,7 @@ export default function FinalizarPedido({ navigation }) {
   const [enderecos, setEnderecos] = useState([]);
   const [enderecoSelecionado, setEnderecoSelecionado] = useState(null);
   const [total, setTotal] = useState(0);
+  const [formaPagamento, setFormaPagamento] = useState('pix');
 
   const carregar = useCallback(async () => {
     const cart = await Cart.list();
@@ -43,7 +44,7 @@ export default function FinalizarPedido({ navigation }) {
         { text: 'Cadastrar', onPress: () => navigation.navigate('EditarEndereco', {}) },
       ]);
 
-    const pedido = await Orders.add({ itens, total, endereco: enderecoSelecionado });
+    const pedido = await Orders.add({ itens, total, endereco: enderecoSelecionado, forma_pagamento: formaPagamento });
     await Cart.clear();
 
     Alert.alert(
@@ -120,6 +121,21 @@ export default function FinalizarPedido({ navigation }) {
         </ScrollView>
       )}
 
+      <Text style={styles.subtitulo}>Forma de pagamento</Text>
+      <View style={styles.formasBox}>
+        {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].map((f) => (
+          <TouchableOpacity
+            key={f}
+            style={[styles.formaBt, formaPagamento === f && styles.formaAtivo]}
+            onPress={() => setFormaPagamento(f)}
+          >
+            <Text style={[styles.formaTxt, formaPagamento === f && styles.formaAtivoTxt]}>
+              {f === 'pix' ? 'PIX' : f === 'dinheiro' ? 'Dinheiro' : f === 'cartao_debito' ? 'Débito' : 'Crédito'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <View style={styles.totalBox}>
         <Text style={styles.totalLabel}>Total</Text>
         <Text style={styles.totalValor}>R$ {total.toFixed(2)}</Text>
@@ -173,4 +189,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: 10,
   },
   btFinalizarTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
+
+  formasBox: { flexDirection: 'row', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' },
+  formaBt: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff' },
+  formaAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },
+  formaTxt: { fontSize: 13, color: colors.textPrimary },
+  formaAtivoTxt: { color: '#fff', fontWeight: '700' },
 });

@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const models = require('./models');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
@@ -17,12 +18,11 @@ const { User, Restaurant, Address, Dish, Order, OrderItem, sequelize } = models;
 // =================== USUÁRIO ===================
 app.post('/create', async (req, res) => {
   try {
-    await User.create({
-      nome: req.body.nome,
-      email: req.body.email,
-      senha: req.body.senha,
-    });
-    res.send(JSON.stringify('Cadastrado com sucesso!'));
+    const { nome, email, senha } = req.body;
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const novoUser = await User.create({ nome, email, senha: senhaHash });
+    const { senha: _, ...semSenha } = novoUser.toJSON();
+    res.status(201).json(semSenha);
   } catch (e) {
     if (e.name === 'SequelizeUniqueConstraintError') {
       return res.status(409).send(JSON.stringify('E-mail já cadastrado'));
@@ -33,11 +33,13 @@ app.post('/create', async (req, res) => {
 
 app.post('/Login', async (req, res) => {
   try {
-    const user = await User.findOne({
-      where: { email: req.body.email, senha: req.body.senha },
-    });
-    if (!user) return res.send(JSON.stringify('error'));
-    res.send(user);
+    const { email, senha } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(401).send(JSON.stringify('error'));
+    const senhaOk = await bcrypt.compare(senha, user.senha);
+    if (!senhaOk) return res.status(401).send(JSON.stringify('error'));
+    const { senha: _, ...semSenha } = user.toJSON();
+    res.json(semSenha);
   } catch (e) {
     res.status(500).send(JSON.stringify('error'));
   }
@@ -90,16 +92,28 @@ app.get('/restaurants', async (req, res) => {
   }
 });
 
+app.post('/InscrevaseRestaurante', async (req, res) => {
+  try {
+    const { nome, email, telefone, cnpj, senha } = req.body;
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const novo = await Restaurant.create({ nome, email, telefone, cnpj, senha: senhaHash });
+    const { senha: _, ...semSenha } = novo.toJSON();
+    res.status(201).json(semSenha);
+  } catch (e) {
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ erro: 'E-mail ou CNPJ já cadastrado' });
+    }
+    res.status(500).json({ erro: 'Erro ao cadastrar restaurante' });
+  }
+});
+
 app.post('/restaurants', async (req, res) => {
   try {
-    const novo = await Restaurant.create({
-      nome: req.body.nome,
-      email: req.body.email,
-      telefone: req.body.telefone,
-      cnpj: req.body.cnpj,
-      senha: req.body.senha,
-    });
-    res.status(201).json(novo);
+    const { nome, email, telefone, cnpj, senha } = req.body;
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const novo = await Restaurant.create({ nome, email, telefone, cnpj, senha: senhaHash });
+    const { senha: _, ...semSenha } = novo.toJSON();
+    res.status(201).json(semSenha);
   } catch (e) {
     if (e.name === 'SequelizeUniqueConstraintError') {
       return res.status(409).json({ erro: 'E-mail ou CNPJ já cadastrado' });
@@ -110,11 +124,12 @@ app.post('/restaurants', async (req, res) => {
 
 app.post('/restaurants/login', async (req, res) => {
   try {
-    const r = await Restaurant.findOne({
-      where: { email: req.body.email, senha: req.body.senha },
-    });
+    const { email, senha } = req.body;
+    const r = await Restaurant.findOne({ where: { email } });
     if (!r) return res.status(401).json({ erro: 'Credenciais inválidas' });
-    const { senha, ...semSenha } = r.toJSON();
+    const senhaOk = await bcrypt.compare(senha, r.senha);
+    if (!senhaOk) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    const { senha: _, ...semSenha } = r.toJSON();
     res.json(semSenha);
   } catch (e) {
     res.status(500).json({ erro: 'Erro interno' });
@@ -130,6 +145,22 @@ app.get('/restaurants/:id', async (req, res) => {
     res.json(r);
   } catch (e) {
     res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+app.put('/restaurants/:id', async (req, res) => {
+  try {
+    const r = await Restaurant.findByPk(req.params.id);
+    if (!r) return res.status(404).json({ erro: 'Restaurante não encontrado.' });
+    const { senha, ...dados } = req.body;
+    if (senha) {
+      dados.senha = await bcrypt.hash(senha, 10);
+    }
+    await r.update(dados);
+    const { senha: _, ...semSenha } = r.toJSON();
+    res.json(semSenha);
+  } catch (e) {
+    res.status(500).json({ erro: e.message });
   }
 });
 
@@ -274,25 +305,56 @@ app.get('/orders/:id', async (req, res) => {
 });
 
 // Cria pedido + itens em uma transação. Espera:
-// { user_id, address_id, total, items: [{ dish_id, quantidade_g, preco_total, ... }] }
+// { user_id, address_id, items: [{ dish_id, quantidade_g, observacao }] }
 app.post('/orders', async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { user_id, address_id, total, items } = req.body;
+    const { user_id, address_id, items } = req.body;
+
+    if (!items || items.length === 0) {
+      await t.rollback();
+      return res.status(400).json({ erro: 'O pedido deve ter pelo menos um item.' });
+    }
+
+    const linhas = [];
+    let totalCalculado = 0;
+    for (const it of items) {
+      const prato = await Dish.findByPk(it.dish_id);
+      if (!prato) {
+        await t.rollback();
+        return res.status(400).json({ erro: `Prato ${it.dish_id} não encontrado.` });
+      }
+      if (!prato.disponivel) {
+        await t.rollback();
+        return res.status(400).json({ erro: `Prato "${prato.nome}" não está disponível.` });
+      }
+      if (it.quantidade_g < prato.peso_min_g) {
+        await t.rollback();
+        return res.status(400).json({ erro: `Quantidade mínima para "${prato.nome}" é ${prato.peso_min_g}g.` });
+      }
+      if (it.quantidade_g > prato.peso_max_g) {
+        await t.rollback();
+        return res.status(400).json({ erro: `Quantidade máxima para "${prato.nome}" é ${prato.peso_max_g}g.` });
+      }
+      const precoTotal = parseFloat((prato.preco_por_kg * (it.quantidade_g / 1000)).toFixed(2));
+      totalCalculado += precoTotal;
+      linhas.push({
+        dish_id: prato.id,
+        nome_snapshot: prato.nome,
+        quantidade_g: it.quantidade_g,
+        preco_por_kg_snapshot: prato.preco_por_kg,
+        preco_total: precoTotal,
+        observacao: it.observacao || null,
+      });
+    }
+    totalCalculado = parseFloat(totalCalculado.toFixed(2));
+
     const pedido = await Order.create(
-      { user_id, address_id, total, status: 'Em preparo' },
+      { user_id, address_id, total: totalCalculado, status: 'Em preparo' },
       { transaction: t }
     );
-    const linhas = (items || []).map((it) => ({
-      order_id: pedido.id,
-      dish_id: it.dish_id,
-      nome_snapshot: it.nome_snapshot,
-      quantidade_g: it.quantidade_g,
-      preco_por_kg_snapshot: it.preco_por_kg_snapshot,
-      preco_total: it.preco_total,
-      observacao: it.observacao,
-    }));
-    if (linhas.length) await OrderItem.bulkCreate(linhas, { transaction: t });
+    const linhasComOrderId = linhas.map((l) => ({ ...l, order_id: pedido.id }));
+    await OrderItem.bulkCreate(linhasComOrderId, { transaction: t });
     await t.commit();
     const completo = await Order.findByPk(pedido.id, {
       include: [{ model: OrderItem, as: 'items' }],
@@ -306,14 +368,26 @@ app.post('/orders', async (req, res) => {
 
 app.put('/orders/:id/status', async (req, res) => {
   try {
-    if (!Order.STATUS.includes(req.body.status)) {
+    const { status } = req.body;
+    if (!Order.STATUS.includes(status)) {
       return res.status(400).json({ erro: 'Status inválido' });
     }
-    const [count] = await Order.update(
-      { status: req.body.status },
-      { where: { id: req.params.id } }
-    );
-    res.json({ atualizado: !!count });
+
+    const TRANSICOES_VALIDAS = {
+      'Em preparo': ['Saiu para entrega', 'Cancelado'],
+      'Saiu para entrega': ['Entregue', 'Cancelado'],
+      'Entregue': [],
+      'Cancelado': [],
+    };
+    const pedidoAtual = await Order.findByPk(req.params.id);
+    if (!pedidoAtual) return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    const permitidos = TRANSICOES_VALIDAS[pedidoAtual.status] || [];
+    if (!permitidos.includes(status)) {
+      return res.status(400).json({ erro: `Transição de "${pedidoAtual.status}" para "${status}" não permitida.` });
+    }
+
+    await pedidoAtual.update({ status });
+    res.json({ atualizado: true });
   } catch (e) {
     res.status(500).json({ erro: 'Erro interno' });
   }
@@ -321,22 +395,20 @@ app.put('/orders/:id/status', async (req, res) => {
 
 app.delete('/orders/:id', async (req, res) => {
   try {
-    const count = await Order.destroy({ where: { id: req.params.id } });
-    res.json({ excluido: !!count });
+    const pedido = await Order.findByPk(req.params.id);
+    if (!pedido) return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    if (['Em preparo', 'Saiu para entrega'].includes(pedido.status)) {
+      return res.status(400).json({ erro: 'Não é possível excluir um pedido em andamento.' });
+    }
+    await pedido.destroy();
+    res.json({ excluido: true });
   } catch (e) {
     res.status(500).json({ erro: 'Erro interno' });
   }
 });
 
 // =================== HEALTH ===================
-app.get('/health', async (req, res) => {
-  try {
-    await sequelize.authenticate();
-    res.json({ status: 'ok', db: 'connected' });
-  } catch (e) {
-    res.status(500).json({ status: 'error', db: 'disconnected' });
-  }
-});
+app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.listen(port, () => {
   console.log(`Servidor Rango rodando em http://localhost:${port}`);

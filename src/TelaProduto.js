@@ -63,22 +63,56 @@ export default function TelaProduto({ navigation, route }) {
 
   async function adicionarAoCarrinho() {
     if (!prato) return;
-    await Cart.add({
+    const item = {
       pratoId: prato.id,
       nome: prato.nome,
       quantidade: pesoG,
       preco: parseFloat(preco.toFixed(2)),
       precoPorKg: prato.precoPorKg,
       observacao,
-    });
-    Alert.alert(
-      'Adicionado ao carrinho',
-      `${formatarPeso(pesoG)} de ${prato.nome}`,
-      [
-        { text: 'Continuar', style: 'cancel' },
-        { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
-      ]
-    );
+      restaurantId: prato.restaurantId,
+      restaurantNome: prato.restaurantNome,
+    };
+    try {
+      await Cart.add(item);
+      Alert.alert(
+        'Adicionado ao carrinho',
+        `${formatarPeso(pesoG)} de ${prato.nome}`,
+        [
+          { text: 'Continuar', style: 'cancel' },
+          { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
+        ]
+      );
+    } catch (e) {
+      if (e.message?.startsWith('RESTAURANTE_DIFERENTE:')) {
+        const nomeOutro = e.message.split(':')[1];
+        Alert.alert(
+          'Restaurante diferente',
+          `Seu carrinho tem itens de "${nomeOutro}". Deseja limpar o carrinho e adicionar este item?`,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Limpar e adicionar',
+              style: 'destructive',
+              onPress: async () => {
+                await Cart.clear();
+                await Cart.add(item);
+                Alert.alert(
+                  'Adicionado ao carrinho',
+                  `${formatarPeso(pesoG)} de ${prato.nome}`,
+                  [
+                    { text: 'Continuar', style: 'cancel' },
+                    { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
+                  ]
+                );
+              },
+            },
+          ]
+        );
+        return;
+      }
+      Alert.alert('Erro', 'Não foi possível adicionar ao carrinho.');
+    }
   }
 
   if (!prato) {
