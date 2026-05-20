@@ -34,7 +34,7 @@ export default function CardapioCacarola({ navigation, route }) {
   );
 
   function abrirPrato(p) {
-    navigation.navigate('Arroz', { id: p.id });
+    navigation.navigate('Arroz', { id: p.id, restaurantNome });
   }
 
   if (carregando) {

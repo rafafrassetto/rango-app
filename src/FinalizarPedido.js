@@ -76,7 +76,7 @@ export default function FinalizarPedido({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}>
       <Text style={styles.titulo}>Finalizar pedido</Text>
 
       <Text style={styles.subtitulo}>Itens do carrinho</Text>
@@ -144,12 +144,12 @@ export default function FinalizarPedido({ navigation }) {
       <TouchableOpacity style={styles.btFinalizar} onPress={finalizar}>
         <Text style={styles.btFinalizarTxt}>Confirmar pedido</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.background },
   titulo: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
   subtitulo: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginTop: 14, marginBottom: 6 },
   itemBox: {

@@ -36,6 +36,11 @@ export default function TelaProduto({ navigation, route }) {
   const [presetAtivo, setPresetAtivo] = useState(null);
 
   useEffect(() => {
+    const nomeRestaurante = route?.params?.restaurantNome;
+    if (nomeRestaurante) navigation.setOptions({ title: nomeRestaurante });
+  }, [route?.params?.restaurantNome]);
+
+  useEffect(() => {
     (async () => {
       const p = await Catalogo.get(idPrato);
       setPrato(p);
