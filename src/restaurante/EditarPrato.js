@@ -15,6 +15,25 @@ const IMAGENS_DISPONIVEIS = [
   { key: 'macarraoTomate', rotulo: 'Macarrão' },
 ];
 
+// Mantém só dígitos
+function soNumeros(s) {
+  return (s || '').replace(/\D/g, '');
+}
+
+// Máscara R$ a partir de centavos digitados: "1290" -> "R$ 12,90"
+function mascaraBRL(s) {
+  const dig = soNumeros(s);
+  if (!dig) return '';
+  const n = Number(dig) / 100;
+  return 'R$ ' + n.toFixed(2).replace('.', ',');
+}
+
+// Converte string mascarada de volta pra number
+function brlParaNumero(s) {
+  const dig = soNumeros(s);
+  return dig ? Number(dig) / 100 : 0;
+}
+
 function slugify(s) {
   return (s || '')
     .toString()
@@ -37,8 +56,10 @@ export default function EditarPrato({ route, navigation }) {
   const [pesoMaxG, setPesoMaxG] = useState('');
   const [passoG, setPassoG] = useState('50');
   const [imagemKey, setImagemKey] = useState('arrozbranco');
+  const [imagemUrl, setImagemUrl] = useState('');
   const [disponivel, setDisponivel] = useState(true);
   const [carregando, setCarregando] = useState(editando);
+  const [errosCampos, setErrosCampos] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -47,11 +68,13 @@ export default function EditarPrato({ route, navigation }) {
       if (p) {
         setNome(p.nome || '');
         setDescricao(p.descricao || '');
-        setPrecoPorKg(String(p.precoPorKg ?? ''));
+        const centavos = Math.round(Number(p.precoPorKg || 0) * 100);
+        setPrecoPorKg(centavos ? mascaraBRL(String(centavos)) : '');
         setPesoMinG(String(p.pesoMinG ?? ''));
         setPesoMaxG(String(p.pesoMaxG ?? ''));
         setPassoG(String(p.passoG ?? 50));
         setImagemKey(p.imagemKey || 'arrozbranco');
+        setImagemUrl(p.imagemUrl || '');
         setDisponivel(p.disponivel !== false);
       }
       setCarregando(false);
@@ -59,16 +82,20 @@ export default function EditarPrato({ route, navigation }) {
   }, [id, editando]);
 
   function validar() {
-    if (!nome.trim()) return 'Informe o nome do prato.';
-    const preco = parseFloat(String(precoPorKg).replace(',', '.'));
-    if (!preco || preco <= 0) return 'Preço por kg inválido.';
+    const erros = {};
+    if (!nome.trim()) erros.nome = true;
+    const preco = brlParaNumero(precoPorKg);
+    if (!preco || preco <= 0) erros.precoPorKg = true;
     const min = parseInt(pesoMinG, 10);
     const max = parseInt(pesoMaxG, 10);
     const passo = parseInt(passoG, 10);
-    if (!min || min <= 0) return 'Peso mínimo deve ser maior que zero.';
-    if (!max || max <= min) return 'Peso máximo deve ser maior que o mínimo.';
-    if (!passo || passo <= 0) return 'Passo deve ser maior que zero.';
-    return null;
+    if (!min || min <= 0) erros.pesoMinG = true;
+    if (!max || max <= min) erros.pesoMaxG = true;
+    if (!passo || passo <= 0) erros.passoG = true;
+    setErrosCampos(erros);
+    if (Object.keys(erros).length === 0) return null;
+    if (erros.pesoMaxG && max) return 'Peso máximo deve ser maior que o mínimo.';
+    return 'Preencha os campos destacados em vermelho.';
   }
 
   async function salvar() {
@@ -83,11 +110,12 @@ export default function EditarPrato({ route, navigation }) {
       id: id || slugify(nome) || `prato-${Date.now()}`,
       nome: nome.trim(),
       descricao: descricao.trim(),
-      precoPorKg: parseFloat(String(precoPorKg).replace(',', '.')),
+      precoPorKg: brlParaNumero(precoPorKg),
       pesoMinG: parseInt(pesoMinG, 10),
       pesoMaxG: parseInt(pesoMaxG, 10),
       passoG: parseInt(passoG, 10),
       imagemKey,
+      imagemUrl: imagemUrl.trim() || null,
       disponivel,
       restaurant_id: sessao.id,
     };
@@ -122,7 +150,9 @@ export default function EditarPrato({ route, navigation }) {
         <View style={styles.card}>
           <Text style={styles.label}>Nome</Text>
           <TextInput
-            style={styles.input} value={nome} onChangeText={setNome}
+            style={[styles.input, errosCampos.nome && styles.inputErro]}
+            value={nome}
+            onChangeText={(t) => { setNome(t); setErrosCampos((e) => ({ ...e, nome: false })); }}
             placeholder="Ex.: Arroz Branco"
             placeholderTextColor={colors.placeholder}
           />
@@ -136,11 +166,17 @@ export default function EditarPrato({ route, navigation }) {
             multiline
           />
 
-          <Text style={styles.label}>Preço por kg (R$)</Text>
+          <Text style={styles.label}>Preço por kg</Text>
           <TextInput
-            style={styles.input} value={precoPorKg} onChangeText={setPrecoPorKg}
-            placeholder="79.90" placeholderTextColor={colors.placeholder}
-            keyboardType="decimal-pad"
+            style={[styles.input, errosCampos.precoPorKg && styles.inputErro]}
+            value={precoPorKg}
+            onChangeText={(t) => {
+              setPrecoPorKg(mascaraBRL(t));
+              setErrosCampos((e) => ({ ...e, precoPorKg: false }));
+            }}
+            placeholder="R$ 0,00"
+            placeholderTextColor={colors.placeholder}
+            keyboardType="number-pad"
           />
         </View>
 
@@ -150,7 +186,12 @@ export default function EditarPrato({ route, navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Mínimo (g)</Text>
               <TextInput
-                style={styles.input} value={pesoMinG} onChangeText={setPesoMinG}
+                style={[styles.input, errosCampos.pesoMinG && styles.inputErro]}
+                value={pesoMinG}
+                onChangeText={(t) => {
+                  setPesoMinG(soNumeros(t));
+                  setErrosCampos((e) => ({ ...e, pesoMinG: false }));
+                }}
                 placeholder="100" placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
@@ -158,7 +199,12 @@ export default function EditarPrato({ route, navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Máximo (g)</Text>
               <TextInput
-                style={styles.input} value={pesoMaxG} onChangeText={setPesoMaxG}
+                style={[styles.input, errosCampos.pesoMaxG && styles.inputErro]}
+                value={pesoMaxG}
+                onChangeText={(t) => {
+                  setPesoMaxG(soNumeros(t));
+                  setErrosCampos((e) => ({ ...e, pesoMaxG: false }));
+                }}
                 placeholder="2000" placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
@@ -167,7 +213,12 @@ export default function EditarPrato({ route, navigation }) {
 
           <Text style={styles.label}>Passo (g)</Text>
           <TextInput
-            style={styles.input} value={passoG} onChangeText={setPassoG}
+            style={[styles.input, errosCampos.passoG && styles.inputErro]}
+            value={passoG}
+            onChangeText={(t) => {
+              setPassoG(soNumeros(t));
+              setErrosCampos((e) => ({ ...e, passoG: false }));
+            }}
             placeholder="50" placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
           />
@@ -196,8 +247,26 @@ export default function EditarPrato({ route, navigation }) {
               );
             })}
           </View>
+          <Text style={styles.label}>Ou cole a URL de uma imagem personalizada</Text>
+          <TextInput
+            style={styles.input}
+            value={imagemUrl}
+            onChangeText={setImagemUrl}
+            placeholder="https://..."
+            placeholderTextColor={colors.placeholder}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+          {imagemUrl ? (
+            <Image
+              source={{ uri: imagemUrl }}
+              style={styles.imgPreviewGrande}
+              resizeMode="cover"
+            />
+          ) : null}
           <Text style={styles.dica}>
-            Por enquanto a imagem é escolhida entre as opções pré-carregadas no app.
+            Recomendação: imagem quadrada (1:1) com pelo menos 600x600px e no máximo 2MB.
+            Formatos aceitos: JPG, PNG ou WEBP.
           </Text>
         </View>
 
@@ -249,6 +318,11 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder,
     borderRadius: radius.md, padding: 12, color: colors.textPrimary,
+  },
+  inputErro: { borderColor: colors.danger, backgroundColor: '#FFF0F0' },
+  imgPreviewGrande: {
+    width: '100%', height: 140, borderRadius: radius.md,
+    marginTop: 10, backgroundColor: colors.surfaceAlt,
   },
   linhaDupla: { flexDirection: 'row', gap: 10 },
   dica: { color: colors.textMuted, fontSize: 11, marginTop: 6 },

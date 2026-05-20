@@ -141,7 +141,7 @@ export default function ConfiguracoesRestaurante({ restaurante, onUpdate }) {
         </View>
         <View style={styles.linhaInfo}>
           <Icon name="shield" size={14} color={colors.textSecondary} />
-          <Text style={styles.infoTxt}>Sessão local · dados sincronizam offline</Text>
+          <Text style={styles.infoTxt}>Dados sincronizados com o banco em nuvem</Text>
         </View>
       </View>
     </View>

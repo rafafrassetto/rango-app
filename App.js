@@ -6,13 +6,11 @@ import Login from './src/Login';
 import Inscreva from './src/Inscreva';
 import CardapioCacarola from './src/CardapioCacarola';
 import InscrevaseRestaurante from './src/InscrevaseRestaurante';
-import Arroz from './src/Arroz';
+import TelaProduto from './src/TelaProduto';
 import Pagar from './src/Pagar';
 import Carrinho from './src/Carrinho';
 import Esqueceu from './src/Esqueceu';
 import FinalizarPedido from './src/FinalizarPedido';
-import Feijao from './src/Feijao';
-import Macarrao from './src/Macarrao';
 import Localizacao from './src/Localizacao';
 import MeusPedidos from './src/MeusPedidos';
 import EditarPedido from './src/EditarPedido';
@@ -74,18 +72,8 @@ export default function App() {
           options={{ title: 'Cardápio' }}
         />
         <Stack.Screen
-          name="Arroz"
-          component={Arroz}
-          options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
-        />
-        <Stack.Screen
-          name="Feijao"
-          component={Feijao}
-          options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
-        />
-        <Stack.Screen
-          name="Macarrao"
-          component={Macarrao}
+          name="TelaProduto"
+          component={TelaProduto}
           options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
         />
         <Stack.Screen

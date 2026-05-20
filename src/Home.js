@@ -145,44 +145,38 @@ export default function Home({ navigation }) {
           ))
         )}
 
-        <Text style={styles.tituloSecao}>Atalhos</Text>
-        <View style={styles.atalhosBox}>
-          <TouchableOpacity style={styles.atalho} onPress={() => navigation.navigate('MeusPedidos')}>
-            <View style={styles.atalhoIcon}><Icon name="package" size={20} color={colors.primary} /></View>
-            <Text style={styles.atalhoTxt}>Meus pedidos</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.atalho} onPress={() => navigation.navigate('MeusEnderecos')}>
-            <View style={styles.atalhoIcon}><Icon name="map-pin" size={20} color={colors.primary} /></View>
-            <Text style={styles.atalhoTxt}>Endereços</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.atalho} onPress={() => navigation.navigate('Localizacao')}>
-            <View style={styles.atalhoIcon}><Icon name="map" size={20} color={colors.primary} /></View>
-            <Text style={styles.atalhoTxt}>Mapa</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.atalho} onPress={() => navigation.navigate('Perfil')}>
-            <View style={styles.atalhoIcon}><Icon name="user" size={20} color={colors.primary} /></View>
-            <Text style={styles.atalhoTxt}>Perfil</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('Carrinho')}
-        activeOpacity={0.85}
-      >
-        <Icon name="shopping-bag" size={22} color={colors.textInverse} />
-      </TouchableOpacity>
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('Home')}>
+          <Icon name="home" size={20} color={colors.primary} />
+          <Text style={[styles.tabTxt, { color: colors.primary }]}>Início</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('MeusPedidos')}>
+          <Icon name="package" size={20} color={colors.textSecondary} />
+          <Text style={styles.tabTxt}>Pedidos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItemCarrinho} onPress={() => navigation.navigate('Carrinho')}>
+          <View style={styles.tabCartCircle}>
+            <Icon name="shopping-bag" size={22} color={colors.textInverse} />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('MeusEnderecos')}>
+          <Icon name="map-pin" size={20} color={colors.textSecondary} />
+          <Text style={styles.tabTxt}>Endereços</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('Perfil')}>
+          <Icon name="user" size={20} color={colors.textSecondary} />
+          <Text style={styles.tabTxt}>Perfil</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.lg, paddingBottom: 100 },
+  scroll: { padding: spacing.lg, paddingBottom: 20 },
 
   header: { marginBottom: spacing.md },
   headerEntrega: { color: colors.textSecondary, fontSize: 12 },
@@ -230,24 +224,24 @@ const styles = StyleSheet.create({
   },
   tagAbertoTxt: { color: colors.success, fontSize: 10, fontWeight: '700' },
 
-  atalhosBox: {
-    flexDirection: 'row', flexWrap: 'wrap',
+  bottomBar: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: radius.lg, padding: spacing.md, ...shadow.card,
+    borderTopWidth: 1, borderColor: colors.divider,
+    paddingVertical: 8, paddingHorizontal: 4,
+    paddingBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    ...shadow.card,
   },
-  atalho: { width: '25%', alignItems: 'center', paddingVertical: 8 },
-  atalhoIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
-  },
-  atalhoTxt: { fontSize: 11, color: colors.textPrimary, textAlign: 'center' },
-
-  fab: {
-    position: 'absolute', right: 20, bottom: 24,
-    width: 56, height: 56, borderRadius: 28,
+  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  tabTxt: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
+  tabItemCarrinho: { flex: 1, alignItems: 'center' },
+  tabCartCircle: {
+    width: 52, height: 52, borderRadius: 26,
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
+    marginTop: -22,
     ...shadow.card,
   },
 });

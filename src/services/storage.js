@@ -8,7 +8,10 @@ const KEYS = {
   USER: '@rango:user',
   WEIGHTS: '@rango:weights',
   RATINGS: '@rango:ratings',
+  CANCEL_FEE: '@rango:cancelFee',
 };
+
+export const CANCEL_FEE_AMOUNT = 10;
 
 async function readList(key) {
   try {
@@ -319,6 +322,27 @@ export const Ratings = {
     if (filt.length === 0) return { media: 0, total: 0 };
     const soma = filt.reduce((acc, r) => acc + ((r.entrega + r.restaurante) / 2), 0);
     return { media: soma / filt.length, total: filt.length };
+  },
+};
+
+// =================== TAXA DE CANCELAMENTO ACUMULADA (local) ===================
+export const CancelFee = {
+  async get() {
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.CANCEL_FEE);
+      return raw ? Number(JSON.parse(raw)) || 0 : 0;
+    } catch (e) {
+      return 0;
+    }
+  },
+  async add() {
+    const atual = await CancelFee.get();
+    const novo = atual + CANCEL_FEE_AMOUNT;
+    await AsyncStorage.setItem(KEYS.CANCEL_FEE, JSON.stringify(novo));
+    return novo;
+  },
+  async clear() {
+    await AsyncStorage.setItem(KEYS.CANCEL_FEE, JSON.stringify(0));
   },
 };
 

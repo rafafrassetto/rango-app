@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Cart, Orders, Addresses } from './services/storage';
+import { Cart, Orders, Addresses, CancelFee } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { formatBRL, formatPeso } from './services/format';
 
@@ -17,13 +17,17 @@ export default function FinalizarPedido({ navigation }) {
   const [itens, setItens] = useState([]);
   const [enderecos, setEnderecos] = useState([]);
   const [enderecoSelecionado, setEnderecoSelecionado] = useState(null);
-  const [total, setTotal] = useState(0);
+  const [subtotal, setSubtotal] = useState(0);
+  const [taxaCancel, setTaxaCancel] = useState(0);
   const [formaPagamento, setFormaPagamento] = useState('pix');
+
+  const total = subtotal + taxaCancel;
 
   const carregar = useCallback(async () => {
     const cart = await Cart.list();
     setItens(cart);
-    setTotal(cart.reduce((acc, item) => acc + Number(item.preco || 0), 0));
+    setSubtotal(cart.reduce((acc, item) => acc + Number(item.preco || 0), 0));
+    setTaxaCancel(await CancelFee.get());
     const ends = await Addresses.list();
     setEnderecos(ends);
     if (ends.length > 0 && !enderecoSelecionado) setEnderecoSelecionado(ends[0]);
@@ -46,6 +50,7 @@ export default function FinalizarPedido({ navigation }) {
       forma_pagamento: formaPagamento,
     });
     await Cart.clear();
+    if (taxaCancel > 0) await CancelFee.clear();
 
     navigation.replace('Pagamento', {
       orderId: pedido.id,
@@ -128,6 +133,22 @@ export default function FinalizarPedido({ navigation }) {
         ))}
       </View>
 
+      {taxaCancel > 0 && (
+        <View style={styles.linhaResumo}>
+          <Text style={styles.linhaLabel}>Subtotal</Text>
+          <Text style={styles.linhaValor}>{formatBRL(subtotal)}</Text>
+        </View>
+      )}
+      {taxaCancel > 0 && (
+        <View style={styles.linhaResumo}>
+          <Text style={[styles.linhaLabel, { color: colors.danger }]}>
+            Taxa de cancelamento (pedido anterior)
+          </Text>
+          <Text style={[styles.linhaValor, { color: colors.danger }]}>
+            +{formatBRL(taxaCancel)}
+          </Text>
+        </View>
+      )}
       <View style={styles.totalBox}>
         <Text style={styles.totalLabel}>Total</Text>
         <Text style={styles.totalValor}>{formatBRL(total)}</Text>
@@ -187,4 +208,11 @@ const styles = StyleSheet.create({
   formaAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },
   formaTxt: { fontSize: 13, color: colors.textPrimary },
   formaAtivoTxt: { color: '#fff', fontWeight: '700' },
+
+  linhaResumo: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingVertical: 4, marginTop: 4,
+  },
+  linhaLabel: { color: colors.textSecondary, fontSize: 12 },
+  linhaValor: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
 });

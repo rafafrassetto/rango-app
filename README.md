@@ -100,6 +100,50 @@ Escaneie o QR Code com o Expo Go.
 - Email: `contato@sabordaserra.com.br` (ou qualquer um do seed)
 - Senha: `restaurante123`
 
+## Estrutura do projeto
+
+```
+rango-app/
+├── App.js                  # Stack Navigator e rotas
+├── Controller.js           # Bootstrap do Express (rotas REST)
+├── config/                 # Config do Sequelize (lê .env)
+├── models/                 # Models Sequelize (User, Restaurant, Dish, Order, etc.)
+├── migrations/             # Migrations do schema PostgreSQL
+├── seeders/                # Dados de demonstração (Criciúma/SC)
+├── assets/                 # Ícones, splash e imagens dos pratos
+├── src/
+│   ├── Home.js, Login.js, Carrinho.js, ...   # Telas do cliente
+│   ├── TelaProduto.js                        # Tela genérica de prato (peso, presets, observação)
+│   ├── CardapioCacarola.js                   # Cardápio por restaurante
+│   ├── FinalizarPedido.js / Pagamento.js     # Checkout + métodos de pagamento
+│   ├── AcompanharPedido.js                   # Acompanhamento do pedido em tempo real
+│   ├── AvaliarPedido.js                      # Avaliação pós-entrega (estrelas)
+│   ├── MeusPedidos.js                        # Pedidos do usuário + cancelamento
+│   ├── MeusEnderecos.js / EditarEndereco.js  # CRUD de endereços
+│   ├── Localizacao.js                        # Mapa (expo-location)
+│   ├── restaurante/                          # Módulo do parceiro
+│   │   ├── LoginRestaurante.js
+│   │   ├── PainelRestaurante.js              # KPIs + abas
+│   │   ├── GerenciarCardapio.js / EditarPrato.js
+│   │   ├── GerenciarPedidos.js
+│   │   └── ConfiguracoesRestaurante.js
+│   ├── services/                             # Camada de integração
+│   │   ├── api.js                            # Cliente HTTP do backend
+│   │   ├── storage.js                        # AsyncStorage + cache (Cart, Orders, Addresses, etc.)
+│   │   ├── catalogo.js                       # Catálogo de pratos (API + imagens)
+│   │   ├── restaurants.js / restauranteAuth.js
+│   │   ├── clima.js                          # API externa wttr.in
+│   │   ├── viaCep.js                         # API externa ViaCEP
+│   │   ├── reciboPdf.js                      # Geração de PDF (expo-print)
+│   │   ├── format.js                         # Formatadores BRL e peso
+│   │   └── supabase.js                       # Cliente Supabase
+│   ├── hooks/                                # Hooks reutilizáveis (shake, etc.)
+│   └── theme/                                # Cores, spacing, radius, shadow
+└── render.yaml             # Deploy do backend no Render
+```
+
+**Fluxo resumido:** as telas em `src/` chamam funções em `src/services/`, que falam com o backend Express (`Controller.js`) via REST. O backend usa os `models/` (Sequelize) pra acessar o PostgreSQL no Supabase. `AsyncStorage` guarda apenas sessão e cache local (carrinho, último snapshot de pedidos, taxa de cancelamento pendente e avaliações).
+
 ## Estrutura do banco
 
 ```

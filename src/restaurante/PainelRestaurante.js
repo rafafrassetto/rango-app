@@ -107,7 +107,11 @@ export default function PainelRestaurante({ navigation }) {
               style={[styles.tab, ativo && styles.tabAtivo]}
               onPress={() => setAbaAtiva(a.id)}
             >
-              <Icon name={a.icone} size={16} color={ativo ? colors.primary : colors.textSecondary} />
+              <Icon
+                name={a.icone}
+                size={a.id === 'config' ? 13 : 16}
+                color={ativo ? colors.primary : colors.textSecondary}
+              />
               <Text style={[styles.tabTxt, ativo && styles.tabTxtAtivo]}>{a.rotulo}</Text>
             </TouchableOpacity>
           );

@@ -45,6 +45,10 @@ export default function TelaProduto({ navigation, route }) {
           ? Math.max(p.pesoMinG, Math.min(p.pesoMaxG, salvo))
           : p.pesoMinG;
         setPesoG(inicial);
+        const carrinho = await Cart.list();
+        if (carrinho.some((it) => String(it.pratoId) === String(p.id))) {
+          setMostrarBanner(true);
+        }
       }
     })();
   }, [idPrato]);
