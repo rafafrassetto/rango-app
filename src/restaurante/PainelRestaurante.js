@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   btSair: { padding: 8 },
 
   kpisBox: {
-    flexDirection: 'row', marginHorizontal: spacing.lg, marginTop: -20,
+    flexDirection: 'row', marginHorizontal: spacing.lg, marginTop: 20,
     backgroundColor: colors.surface, borderRadius: radius.lg,
     padding: spacing.md, ...shadow.card,
   },

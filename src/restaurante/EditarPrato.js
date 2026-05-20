@@ -211,8 +211,8 @@ export default function EditarPrato({ route, navigation }) {
           <Switch
             value={disponivel}
             onValueChange={setDisponivel}
-            trackColor={{ true: colors.primary, false: colors.divider }}
-            thumbColor={colors.surface}
+            trackColor={{ true: colors.primaryLight, false: colors.divider }}
+            thumbColor={colors.primary}
           />
         </View>
 

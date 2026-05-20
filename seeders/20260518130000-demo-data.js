@@ -1,10 +1,14 @@
 'use strict';
 
+const bcrypt = require('bcryptjs');
+
 const agora = () => new Date();
 
 module.exports = {
   async up(queryInterface) {
     const now = agora();
+    const senhaCliente = await bcrypt.hash('teste123', 10);
+    const senhaRestaurante = await bcrypt.hash('restaurante123', 10);
 
     // ─────────────────────────────────────────────────────────────────────────
     // RESTAURANTES (Criciúma/SC e região)
@@ -15,7 +19,7 @@ module.exports = {
         email: 'contato@sabordaserra.com.br',
         telefone: '(48) 3433-1010',
         cnpj: '12.345.678/0001-90',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -23,7 +27,7 @@ module.exports = {
         email: 'contato@galpaogaucho.com.br',
         telefone: '(48) 3437-2233',
         cnpj: '98.765.432/0001-10',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -31,7 +35,7 @@ module.exports = {
         email: 'contato@cantinadoleo.com.br',
         telefone: '(48) 3045-7788',
         cnpj: '11.222.333/0001-44',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -39,7 +43,7 @@ module.exports = {
         email: 'contato@cozinhadavovo.com.br',
         telefone: '(48) 3432-9090',
         cnpj: '22.333.444/0001-55',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -47,7 +51,7 @@ module.exports = {
         email: 'contato@temperocatarinense.com.br',
         telefone: '(48) 3438-4567',
         cnpj: '33.444.555/0001-66',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -55,7 +59,7 @@ module.exports = {
         email: 'contato@marmitafit.com.br',
         telefone: '(48) 99876-1122',
         cnpj: '44.555.666/0001-77',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -63,7 +67,7 @@ module.exports = {
         email: 'contato@cantinhodopeixe.com.br',
         telefone: '(48) 3433-5544',
         cnpj: '55.666.777/0001-88',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
       {
@@ -71,7 +75,7 @@ module.exports = {
         email: 'contato@mineirodocentro.com.br',
         telefone: '(48) 3045-3322',
         cnpj: '66.777.888/0001-99',
-        senha: 'restaurante123',
+        senha: senhaRestaurante,
         created_at: now, updated_at: now,
       },
     ]);
@@ -176,14 +180,14 @@ module.exports = {
     // USUÁRIOS (Criciúma)
     // ─────────────────────────────────────────────────────────────────────────
     await queryInterface.bulkInsert('users', [
-      { nome: 'Rafael Frassetto',  email: 'rafafrass@gmail.com',           senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Ana Lima',          email: 'ana.lima@email.com',            senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Carlos Silva',      email: 'carlos.silva@email.com',        senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Juliana Bertoldi',  email: 'juliana.bertoldi@email.com',    senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Bruno Bernardi',    email: 'bruno.bernardi@email.com',      senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Marina Costa',      email: 'marina.costa@email.com',        senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Felipe Pizzolo',    email: 'felipe.pizzolo@email.com',      senha: 'teste123', created_at: now, updated_at: now },
-      { nome: 'Camila Rocha',      email: 'camila.rocha@email.com',        senha: 'teste123', created_at: now, updated_at: now },
+      { nome: 'Rafael Frassetto',  email: 'rafafrass@gmail.com',           senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Ana Lima',          email: 'ana.lima@email.com',            senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Carlos Silva',      email: 'carlos.silva@email.com',        senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Juliana Bertoldi',  email: 'juliana.bertoldi@email.com',    senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Bruno Bernardi',    email: 'bruno.bernardi@email.com',      senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Marina Costa',      email: 'marina.costa@email.com',        senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Felipe Pizzolo',    email: 'felipe.pizzolo@email.com',      senha: senhaCliente, created_at: now, updated_at: now },
+      { nome: 'Camila Rocha',      email: 'camila.rocha@email.com',        senha: senhaCliente, created_at: now, updated_at: now },
     ]);
 
     const [users] = await queryInterface.sequelize.query(
