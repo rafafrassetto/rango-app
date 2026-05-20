@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Cart, Orders, Addresses, CancelFee } from './services/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const KEY_END_ENTREGA = '@rango:enderecoEntrega';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { formatBRL, formatPeso } from './services/format';
 
@@ -30,7 +32,11 @@ export default function FinalizarPedido({ navigation }) {
     setTaxaCancel(await CancelFee.get());
     const ends = await Addresses.list();
     setEnderecos(ends);
-    if (ends.length > 0 && !enderecoSelecionado) setEnderecoSelecionado(ends[0]);
+    if (ends.length > 0) {
+      const salvoId = await AsyncStorage.getItem(KEY_END_ENTREGA);
+      const preferido = salvoId && ends.find((e) => String(e.id) === salvoId);
+      setEnderecoSelecionado(preferido || ends[0]);
+    }
   }, [enderecoSelecionado]);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));

@@ -407,6 +407,49 @@ app.delete('/orders/:id', async (req, res) => {
   }
 });
 
+// =================== AVALIAÇÕES ===================
+app.post('/ratings', async (req, res) => {
+  try {
+    const { order_id, restaurant_id, user_id, nota_entrega, nota_restaurante, comentario } = req.body;
+    if (!restaurant_id) return res.status(400).json({ erro: 'restaurant_id obrigatório.' });
+    const r = await models.Rating.create({
+      order_id: order_id || null,
+      restaurant_id,
+      user_id: user_id || null,
+      nota_entrega: Number(nota_entrega) || 0,
+      nota_restaurante: Number(nota_restaurante) || 0,
+      comentario: comentario || null,
+    });
+    res.status(201).json(r);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro ao salvar avaliação.' });
+  }
+});
+
+app.get('/ratings', async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.restaurant_id) where.restaurant_id = req.query.restaurant_id;
+    if (req.query.user_id) where.user_id = req.query.user_id;
+    const lista = await models.Rating.findAll({ where, order: [['created_at', 'DESC']] });
+    res.json(lista);
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro ao buscar avaliações.' });
+  }
+});
+
+app.get('/ratings/avg/:restaurant_id', async (req, res) => {
+  try {
+    const { restaurant_id } = req.params;
+    const lista = await models.Rating.findAll({ where: { restaurant_id } });
+    if (lista.length === 0) return res.json({ media: 0, total: 0 });
+    const soma = lista.reduce((acc, r) => acc + ((r.nota_entrega + r.nota_restaurante) / 2), 0);
+    res.json({ media: soma / lista.length, total: lista.length });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
 // =================== HEALTH ===================
 app.get('/health', (req, res) => res.json({ ok: true }));
 

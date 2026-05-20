@@ -27,7 +27,7 @@ export default function MeusPedidos({ navigation }) {
 
   const carregar = useCallback(async () => {
     const lista = await Orders.list();
-    setPedidos(lista);
+    setPedidos(lista.filter((p) => p.status !== 'Cancelado'));
     setTaxaPendente(await CancelFee.get());
   }, []);
 

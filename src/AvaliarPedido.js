@@ -34,23 +34,14 @@ export default function AvaliarPedido({ navigation, route }) {
       return Alert.alert('Avaliação', 'Selecione as notas de entrega e restaurante.');
     }
     setEnviando(true);
-    try {
-      await Ratings.add({
-        orderId,
-        restaurantId,
-        entrega: notaEntrega,
-        restaurante: notaRestaurante,
-        comentario,
-      });
-      Alert.alert(
-        'Obrigado!',
-        'Sua avaliação foi registrada.',
-        [{ text: 'OK', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }) }]
-      );
-    } catch (e) {
-      Alert.alert('Erro', 'Não foi possível enviar a avaliação.');
-      setEnviando(false);
-    }
+    await Ratings.add({
+      orderId,
+      restaurantId,
+      entrega: notaEntrega,
+      restaurante: notaRestaurante,
+      comentario,
+    });
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   }
 
   function pular() {

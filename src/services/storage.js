@@ -289,12 +289,36 @@ export const Weights = {
   },
 };
 
-// =================== AVALIAÇÕES DE RESTAURANTES (local) ===================
+// =================== AVALIAÇÕES DE RESTAURANTES (API-primary) ===================
+function mapRating(r) {
+  return {
+    id: String(r.id),
+    orderId: r.order_id != null ? String(r.order_id) : null,
+    restaurantId: r.restaurant_id != null ? String(r.restaurant_id) : null,
+    entrega: Number(r.nota_entrega) || 0,
+    restaurante: Number(r.nota_restaurante) || 0,
+    comentario: r.comentario || '',
+    data: r.created_at || new Date().toISOString(),
+  };
+}
+
 export const Ratings = {
-  list: () => readList(KEYS.RATINGS),
+  async list(opts = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (opts.restaurantId) params.set('restaurant_id', opts.restaurantId);
+      const qs = params.toString() ? `?${params}` : '';
+      const lista = await apiRequest(`/ratings${qs}`);
+      const mapped = lista.map(mapRating);
+      await writeList(KEYS.RATINGS, mapped);
+      return mapped;
+    } catch (e) {
+      return readList(KEYS.RATINGS);
+    }
+  },
 
   async add({ orderId, restaurantId, entrega, restaurante, comentario }) {
-    const list = await readList(KEYS.RATINGS);
+    const session = await Session.get();
     const novo = {
       id: generateId(),
       orderId: orderId != null ? String(orderId) : null,
@@ -304,9 +328,29 @@ export const Ratings = {
       comentario: comentario || '',
       data: new Date().toISOString(),
     };
-    list.push(novo);
-    await writeList(KEYS.RATINGS, list);
-    return novo;
+    try {
+      const salvo = await apiRequest('/ratings', {
+        method: 'POST',
+        body: {
+          order_id: orderId ? Number(orderId) : null,
+          restaurant_id: Number(restaurantId),
+          user_id: session?.id ? Number(session.id) : null,
+          nota_entrega: Number(entrega) || 0,
+          nota_restaurante: Number(restaurante) || 0,
+          comentario: comentario || null,
+        },
+      });
+      const mapped = mapRating(salvo);
+      const cache = await readList(KEYS.RATINGS);
+      cache.push(mapped);
+      await writeList(KEYS.RATINGS, cache);
+      return mapped;
+    } catch (e) {
+      const list = await readList(KEYS.RATINGS);
+      list.push(novo);
+      await writeList(KEYS.RATINGS, list);
+      return novo;
+    }
   },
 
   async hasForOrder(orderId) {
@@ -317,11 +361,15 @@ export const Ratings = {
 
   async avgForRestaurant(restaurantId) {
     if (restaurantId == null) return { media: 0, total: 0 };
-    const list = await readList(KEYS.RATINGS);
-    const filt = list.filter((r) => String(r.restaurantId) === String(restaurantId));
-    if (filt.length === 0) return { media: 0, total: 0 };
-    const soma = filt.reduce((acc, r) => acc + ((r.entrega + r.restaurante) / 2), 0);
-    return { media: soma / filt.length, total: filt.length };
+    try {
+      return await apiRequest(`/ratings/avg/${restaurantId}`);
+    } catch (e) {
+      const list = await readList(KEYS.RATINGS);
+      const filt = list.filter((r) => String(r.restaurantId) === String(restaurantId));
+      if (filt.length === 0) return { media: 0, total: 0 };
+      const soma = filt.reduce((acc, r) => acc + ((r.entrega + r.restaurante) / 2), 0);
+      return { media: soma / filt.length, total: filt.length };
+    }
   },
 };
 
