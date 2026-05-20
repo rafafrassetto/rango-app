@@ -16,7 +16,7 @@ import cacarola from '../assets/cacarola.png';
 import sabores from '../assets/sabores.png';
 import rest from '../assets/rest.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
-import { Addresses } from './services/storage';
+import { Addresses, Ratings } from './services/storage';
 import { Restaurants } from './services/restaurants';
 import { obterClimaCriciuma } from './services/clima';
 import { useShake } from './hooks/useShake';
@@ -42,7 +42,16 @@ export default function Home({ navigation }) {
       Restaurants.list(),
       obterClimaCriciuma(),
     ]);
-    setRestaurantes(rs);
+    const comNotas = await Promise.all(
+      rs.map(async (r) => ({ ...r, rating: await Ratings.avgForRestaurant(r.id) }))
+    );
+    comNotas.sort((a, b) => {
+      if ((b.rating?.total || 0) !== (a.rating?.total || 0)) {
+        return (b.rating?.media || 0) - (a.rating?.media || 0);
+      }
+      return (b.rating?.media || 0) - (a.rating?.media || 0);
+    });
+    setRestaurantes(comNotas);
     setClima(c);
     setCarregando(false);
   }, []);
@@ -116,6 +125,14 @@ export default function Home({ navigation }) {
               <Image style={styles.imgRest} source={IMG_FALLBACK[idx % IMG_FALLBACK.length]} />
               <View style={styles.infoRest}>
                 <Text style={styles.nomeRest}>{r.nome}</Text>
+                <View style={styles.linhaInfo}>
+                  <Icon name="star" size={12} color={r.rating?.total > 0 ? '#F5B400' : colors.textMuted} />
+                  <Text style={styles.txtSec}>
+                    {r.rating?.total > 0
+                      ? `${r.rating.media.toFixed(1).replace('.', ',')} (${r.rating.total})`
+                      : 'Sem avaliações'}
+                  </Text>
+                </View>
                 <View style={styles.linhaInfo}>
                   <Icon name="phone" size={11} color={colors.textSecondary} />
                   <Text style={styles.txtSec}>{r.telefone || '—'}</Text>

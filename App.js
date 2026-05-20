@@ -19,6 +19,11 @@ import EditarPedido from './src/EditarPedido';
 import MeusEnderecos from './src/MeusEnderecos';
 import EditarEndereco from './src/EditarEndereco';
 import Perfil from './src/Perfil';
+import PoliticaPrivacidade from './src/PoliticaPrivacidade';
+import TermosUso from './src/TermosUso';
+import Pagamento from './src/Pagamento';
+import AcompanharPedido from './src/AcompanharPedido';
+import AvaliarPedido from './src/AvaliarPedido';
 
 // Módulo do restaurante
 import LoginRestaurante from './src/restaurante/LoginRestaurante';
@@ -104,6 +109,21 @@ export default function App() {
           options={{ title: 'Finalizar Pedido' }}
         />
         <Stack.Screen
+          name="Pagamento"
+          component={Pagamento}
+          options={{ title: 'Pagamento' }}
+        />
+        <Stack.Screen
+          name="AcompanharPedido"
+          component={AcompanharPedido}
+          options={{ title: 'Acompanhar pedido', headerLeft: () => null }}
+        />
+        <Stack.Screen
+          name="AvaliarPedido"
+          component={AvaliarPedido}
+          options={{ title: 'Avaliar pedido', headerLeft: () => null }}
+        />
+        <Stack.Screen
           name="Localizacao"
           component={Localizacao}
           options={{ title: 'Localização' }}
@@ -132,6 +152,16 @@ export default function App() {
           name="Perfil"
           component={Perfil}
           options={{ title: 'Meu Perfil' }}
+        />
+        <Stack.Screen
+          name="PoliticaPrivacidade"
+          component={PoliticaPrivacidade}
+          options={{ title: 'Política de Privacidade' }}
+        />
+        <Stack.Screen
+          name="TermosUso"
+          component={TermosUso}
+          options={{ title: 'Termos de Uso' }}
         />
 
         {/* Módulo do restaurante */}

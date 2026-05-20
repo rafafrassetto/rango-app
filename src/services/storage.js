@@ -6,6 +6,8 @@ const KEYS = {
   ORDERS: '@rango:orders',
   ADDRESSES: '@rango:addresses',
   USER: '@rango:user',
+  WEIGHTS: '@rango:weights',
+  RATINGS: '@rango:ratings',
 };
 
 async function readList(key) {
@@ -260,6 +262,66 @@ export const Addresses = {
   },
 };
 
+// =================== PESO LEMBRADO POR PRATO (local) ===================
+export const Weights = {
+  async get(pratoId) {
+    if (pratoId == null) return null;
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.WEIGHTS);
+      const map = raw ? JSON.parse(raw) : {};
+      const v = map[String(pratoId)];
+      return v != null ? Number(v) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+  async set(pratoId, pesoG) {
+    if (pratoId == null) return;
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.WEIGHTS);
+      const map = raw ? JSON.parse(raw) : {};
+      map[String(pratoId)] = Number(pesoG);
+      await AsyncStorage.setItem(KEYS.WEIGHTS, JSON.stringify(map));
+    } catch (e) { /* silencioso */ }
+  },
+};
+
+// =================== AVALIAÇÕES DE RESTAURANTES (local) ===================
+export const Ratings = {
+  list: () => readList(KEYS.RATINGS),
+
+  async add({ orderId, restaurantId, entrega, restaurante, comentario }) {
+    const list = await readList(KEYS.RATINGS);
+    const novo = {
+      id: generateId(),
+      orderId: orderId != null ? String(orderId) : null,
+      restaurantId: restaurantId != null ? String(restaurantId) : null,
+      entrega: Number(entrega) || 0,
+      restaurante: Number(restaurante) || 0,
+      comentario: comentario || '',
+      data: new Date().toISOString(),
+    };
+    list.push(novo);
+    await writeList(KEYS.RATINGS, list);
+    return novo;
+  },
+
+  async hasForOrder(orderId) {
+    if (!orderId) return false;
+    const list = await readList(KEYS.RATINGS);
+    return list.some((r) => String(r.orderId) === String(orderId));
+  },
+
+  async avgForRestaurant(restaurantId) {
+    if (restaurantId == null) return { media: 0, total: 0 };
+    const list = await readList(KEYS.RATINGS);
+    const filt = list.filter((r) => String(r.restaurantId) === String(restaurantId));
+    if (filt.length === 0) return { media: 0, total: 0 };
+    const soma = filt.reduce((acc, r) => acc + ((r.entrega + r.restaurante) / 2), 0);
+    return { media: soma / filt.length, total: filt.length };
+  },
+};
+
 // =================== SESSÃO DO CLIENTE ===================
 export const Session = {
   get: async () => {
@@ -270,6 +332,10 @@ export const Session = {
       return null;
     }
   },
-  set: (user) => AsyncStorage.setItem(KEYS.USER, JSON.stringify(user)),
+  // LGPD: nunca persistir senha em texto puro no dispositivo (Art. 46).
+  set: (user) => {
+    const { senha, ...semSenha } = user || {};
+    return AsyncStorage.setItem(KEYS.USER, JSON.stringify(semSenha));
+  },
   clear: () => AsyncStorage.removeItem(KEYS.USER),
 };

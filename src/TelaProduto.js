@@ -11,14 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
-import { Cart } from './services/storage';
+import { Cart, Weights } from './services/storage';
 import { Catalogo, IMAGENS, PRESETS_FOME } from './services/catalogo';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-function formatarPeso(g) {
-  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
-  return `${g} g`;
-}
+import { formatBRL, formatPeso as formatarPeso } from './services/format';
 
 function clampPeso(valor, prato) {
   if (!prato) return valor;
@@ -43,9 +39,19 @@ export default function TelaProduto({ navigation, route }) {
     (async () => {
       const p = await Catalogo.get(idPrato);
       setPrato(p);
-      if (p) setPesoG(p.pesoMinG);
+      if (p) {
+        const salvo = await Weights.get(p.id);
+        const inicial = salvo != null
+          ? Math.max(p.pesoMinG, Math.min(p.pesoMaxG, salvo))
+          : p.pesoMinG;
+        setPesoG(inicial);
+      }
     })();
   }, [idPrato]);
+
+  useEffect(() => {
+    if (prato && pesoG > 0) Weights.set(prato.id, pesoG);
+  }, [prato, pesoG]);
 
   const preco = useMemo(() => {
     if (!prato) return 0;
@@ -136,7 +142,7 @@ export default function TelaProduto({ navigation, route }) {
           </View>
           <Text style={styles.descricao}>{prato.descricao}</Text>
           <Text style={styles.precoKg}>
-            R$ {prato.precoPorKg.toFixed(2)}
+            {formatBRL(prato.precoPorKg)}
             <Text style={styles.precoKgUnidade}> / kg</Text>
           </Text>
 
@@ -216,7 +222,7 @@ export default function TelaProduto({ navigation, route }) {
         <View style={styles.rodape}>
           <View>
             <Text style={styles.rodapeLabel}>Total</Text>
-            <Text style={styles.rodapeValor}>R$ {preco.toFixed(2)}</Text>
+            <Text style={styles.rodapeValor}>{formatBRL(preco)}</Text>
           </View>
           <TouchableOpacity style={styles.btComprar} onPress={adicionarAoCarrinho}>
             <Icon name="shopping-bag" size={18} color={colors.textInverse} />

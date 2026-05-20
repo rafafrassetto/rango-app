@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
 import { Catalogo, IMAGENS } from './services/catalogo';
 import { colors, spacing, radius, shadow } from './theme/theme';
+import { formatBRL } from './services/format';
 
 export default function CardapioCacarola({ navigation, route }) {
   const restaurantId = route?.params?.restaurantId;
@@ -79,7 +80,7 @@ export default function CardapioCacarola({ navigation, route }) {
                 <Text style={styles.nome}>{p.nome}</Text>
                 <Text style={styles.descricao} numberOfLines={2}>{p.descricao}</Text>
                 <Text style={styles.preco}>
-                  R$ {p.precoPorKg.toFixed(2)} <Text style={styles.precoUnid}>/ kg</Text>
+                  {formatBRL(p.precoPorKg)} <Text style={styles.precoUnid}>/ kg</Text>
                 </Text>
                 <Text style={styles.regra}>
                   {p.pesoMinG}g – {(p.pesoMaxG / 1000).toFixed(2)}kg

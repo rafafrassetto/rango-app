@@ -11,11 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
 import { Cart } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-function formatPeso(g) {
-  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
-  return `${g} g`;
-}
+import { formatBRL, formatPeso } from './services/format';
 
 export default function Carrinho({ navigation }) {
   const [itens, setItens] = useState([]);
@@ -50,7 +46,7 @@ export default function Carrinho({ navigation }) {
       <View style={styles.card}>
         <View style={{ flex: 1 }}>
           <Text style={styles.nome}>{item.nome}</Text>
-          <Text style={styles.detalhe}>{formatPeso(item.quantidade)} · R$ {Number(item.preco).toFixed(2)}</Text>
+          <Text style={styles.detalhe}>{formatPeso(item.quantidade)} · {formatBRL(item.preco)}</Text>
           {item.observacao ? <Text style={styles.obs}>Obs: {item.observacao}</Text> : null}
         </View>
         <TouchableOpacity style={styles.btRemover} onPress={() => remover(item.id)}>
@@ -84,7 +80,7 @@ export default function Carrinho({ navigation }) {
         <View style={styles.rodape}>
           <View>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.total}>R$ {total.toFixed(2)}</Text>
+            <Text style={styles.total}>{formatBRL(total)}</Text>
           </View>
           <View style={styles.acoes}>
             <TouchableOpacity style={styles.btLimpar} onPress={limpar}>

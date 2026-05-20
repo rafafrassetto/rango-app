@@ -10,13 +10,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Cart, Orders, Addresses } from './services/storage';
-import { gerarReciboPdf } from './services/reciboPdf';
 import { colors, spacing, radius, shadow } from './theme/theme';
-
-function formatPeso(g) {
-  if (g >= 1000) return `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg`;
-  return `${g} g`;
-}
+import { formatBRL, formatPeso } from './services/format';
 
 export default function FinalizarPedido({ navigation }) {
   const [itens, setItens] = useState([]);
@@ -44,24 +39,21 @@ export default function FinalizarPedido({ navigation }) {
         { text: 'Cadastrar', onPress: () => navigation.navigate('EditarEndereco', {}) },
       ]);
 
-    const pedido = await Orders.add({ itens, total, endereco: enderecoSelecionado, forma_pagamento: formaPagamento });
+    const pedido = await Orders.add({
+      itens,
+      total,
+      endereco: enderecoSelecionado,
+      forma_pagamento: formaPagamento,
+    });
     await Cart.clear();
 
-    Alert.alert(
-      'Pedido enviado!',
-      `Seu pedido #${pedido.id.slice(-5)} foi registrado. Deseja gerar o recibo em PDF?`,
-      [
-        { text: 'Não', onPress: () => navigation.navigate('MeusPedidos') },
-        {
-          text: 'Gerar PDF',
-          onPress: async () => {
-            try { await gerarReciboPdf(pedido); }
-            catch (e) { Alert.alert('PDF', 'Não foi possível gerar o PDF.'); }
-            navigation.navigate('MeusPedidos');
-          },
-        },
-      ]
-    );
+    navigation.replace('Pagamento', {
+      orderId: pedido.id,
+      formaPagamento,
+      total,
+      restaurantId: itens[0]?.restaurantId,
+      restaurantNome: itens[0]?.restaurantNome,
+    });
   }
 
   function renderItem({ item }) {
@@ -69,7 +61,7 @@ export default function FinalizarPedido({ navigation }) {
       <View style={styles.itemBox}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <Text style={styles.itemDetalhe}>
-          {formatPeso(item.quantidade)} · R$ {Number(item.preco).toFixed(2)}
+          {formatPeso(item.quantidade)} · {formatBRL(item.preco)}
         </Text>
       </View>
     );
@@ -138,7 +130,7 @@ export default function FinalizarPedido({ navigation }) {
 
       <View style={styles.totalBox}>
         <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalValor}>R$ {total.toFixed(2)}</Text>
+        <Text style={styles.totalValor}>{formatBRL(total)}</Text>
       </View>
 
       <TouchableOpacity style={styles.btFinalizar} onPress={finalizar}>
