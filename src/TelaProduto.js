@@ -26,14 +26,13 @@ function clampPeso(valor, prato) {
 }
 
 export default function TelaProduto({ navigation, route }) {
-  // O id do prato pode vir por params (nova navegação)
-  // ou usamos fallback para 'arroz-branco' por compatibilidade.
   const idPrato = route?.params?.id || 'arroz-branco';
 
   const [prato, setPrato] = useState(null);
   const [pesoG, setPesoG] = useState(0);
   const [observacao, setObservacao] = useState('');
   const [presetAtivo, setPresetAtivo] = useState(null);
+  const [mostrarBanner, setMostrarBanner] = useState(false);
 
   useEffect(() => {
     const nomeRestaurante = route?.params?.restaurantNome;
@@ -80,14 +79,7 @@ export default function TelaProduto({ navigation, route }) {
     };
     try {
       await Cart.add(item);
-      Alert.alert(
-        'Adicionado ao carrinho',
-        `${formatarPeso(pesoG)} de ${prato.nome}`,
-        [
-          { text: 'Continuar', style: 'cancel' },
-          { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
-        ]
-      );
+      setMostrarBanner(true);
     } catch (e) {
       if (e.message?.startsWith('RESTAURANTE_DIFERENTE:')) {
         const nomeOutro = e.message.split(':')[1];
@@ -102,14 +94,7 @@ export default function TelaProduto({ navigation, route }) {
               onPress: async () => {
                 await Cart.clear();
                 await Cart.add(item);
-                Alert.alert(
-                  'Adicionado ao carrinho',
-                  `${formatarPeso(pesoG)} de ${prato.nome}`,
-                  [
-                    { text: 'Continuar', style: 'cancel' },
-                    { text: 'Ver carrinho', onPress: () => navigation.navigate('Carrinho') },
-                  ]
-                );
+                setMostrarBanner(true);
               },
             },
           ]
@@ -134,118 +119,129 @@ export default function TelaProduto({ navigation, route }) {
   }));
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <Image
-        style={styles.imagem}
-        source={IMAGENS[prato.imagemKey]}
-        resizeMode="cover"
-      />
-
-      <View style={styles.bloco}>
-        <View style={styles.headerLinha}>
-          <Text style={styles.titulo}>{prato.nome}</Text>
-          <View style={styles.tagKg}>
-            <Text style={styles.tagKgTxt}>por kg</Text>
-          </View>
-        </View>
-        <Text style={styles.descricao}>{prato.descricao}</Text>
-        <Text style={styles.precoKg}>
-          R$ {prato.precoPorKg.toFixed(2)}
-          <Text style={styles.precoKgUnidade}> / kg</Text>
-        </Text>
-
-        {/* Filtros de fome */}
-        <Text style={styles.label}>Qual é a sua fome?</Text>
-        <View style={styles.presetsBox}>
-          {presetsDisponiveis.map((p) => {
-            const ativo = presetAtivo === p.id;
-            return (
-              <TouchableOpacity
-                key={p.id}
-                disabled={p.indisponivel}
-                style={[
-                  styles.presetChip,
-                  ativo && styles.presetChipAtivo,
-                  p.indisponivel && styles.presetChipDisabled,
-                ]}
-                onPress={() => aplicarPreset(p)}
-              >
-                <Text style={styles.presetEmoji}>{p.emoji}</Text>
-                <Text
-                  style={[
-                    styles.presetRotulo,
-                    ativo && styles.presetRotuloAtivo,
-                    p.indisponivel && styles.presetTxtDisabled,
-                  ]}
-                >
-                  {p.rotulo}
-                </Text>
-                <Text
-                  style={[
-                    styles.presetDesc,
-                    ativo && styles.presetDescAtivo,
-                    p.indisponivel && styles.presetTxtDisabled,
-                  ]}
-                >
-                  {p.descricao}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Seletor de peso manual */}
-        <Text style={styles.label}>Ajuste fino</Text>
-        <View style={styles.seletorPeso}>
-          <TouchableOpacity
-            style={styles.btCounter}
-            onPress={() => ajustarPeso(-prato.passoG)}
-          >
-            <Icon name="minus" size={20} color={colors.primary} />
-          </TouchableOpacity>
-          <View style={styles.pesoDisplay}>
-            <Text style={styles.pesoValor}>{formatarPeso(pesoG)}</Text>
-            <Text style={styles.pesoLimites}>
-              min {formatarPeso(prato.pesoMinG)} · max {formatarPeso(prato.pesoMaxG)}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.btCounter}
-            onPress={() => ajustarPeso(prato.passoG)}
-          >
-            <Icon name="plus" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Anotação */}
-        <Text style={styles.label}>Alguma observação?</Text>
-        <TextInput
-          style={styles.inputAnot}
-          multiline
-          maxLength={200}
-          value={observacao}
-          onChangeText={setObservacao}
-          placeholder="Ex: sem cebola, ponto da carne, separar molho…"
-          placeholderTextColor={colors.placeholder}
+    <View style={styles.wrapper}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: mostrarBanner ? 80 : 40 }}>
+        <Image
+          style={styles.imagem}
+          source={IMAGENS[prato.imagemKey]}
+          resizeMode="cover"
         />
-      </View>
 
-      {/* Rodapé fixo com preço e CTA */}
-      <View style={styles.rodape}>
-        <View>
-          <Text style={styles.rodapeLabel}>Total</Text>
-          <Text style={styles.rodapeValor}>R$ {preco.toFixed(2)}</Text>
+        <View style={styles.bloco}>
+          <View style={styles.headerLinha}>
+            <Text style={styles.titulo}>{prato.nome}</Text>
+            <View style={styles.tagKg}>
+              <Text style={styles.tagKgTxt}>por kg</Text>
+            </View>
+          </View>
+          <Text style={styles.descricao}>{prato.descricao}</Text>
+          <Text style={styles.precoKg}>
+            R$ {prato.precoPorKg.toFixed(2)}
+            <Text style={styles.precoKgUnidade}> / kg</Text>
+          </Text>
+
+          <Text style={styles.label}>Qual é a sua fome?</Text>
+          <View style={styles.presetsBox}>
+            {presetsDisponiveis.map((p) => {
+              const ativo = presetAtivo === p.id;
+              return (
+                <TouchableOpacity
+                  key={p.id}
+                  disabled={p.indisponivel}
+                  style={[
+                    styles.presetChip,
+                    ativo && styles.presetChipAtivo,
+                    p.indisponivel && styles.presetChipDisabled,
+                  ]}
+                  onPress={() => aplicarPreset(p)}
+                >
+                  <Text style={styles.presetEmoji}>{p.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.presetRotulo,
+                      ativo && styles.presetRotuloAtivo,
+                      p.indisponivel && styles.presetTxtDisabled,
+                    ]}
+                  >
+                    {p.rotulo}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.presetDesc,
+                      ativo && styles.presetDescAtivo,
+                      p.indisponivel && styles.presetTxtDisabled,
+                    ]}
+                  >
+                    {p.descricao}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={styles.label}>Ajuste fino</Text>
+          <View style={styles.seletorPeso}>
+            <TouchableOpacity
+              style={styles.btCounter}
+              onPress={() => ajustarPeso(-prato.passoG)}
+            >
+              <Icon name="minus" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <View style={styles.pesoDisplay}>
+              <Text style={styles.pesoValor}>{formatarPeso(pesoG)}</Text>
+              <Text style={styles.pesoLimites}>
+                min {formatarPeso(prato.pesoMinG)} · max {formatarPeso(prato.pesoMaxG)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.btCounter}
+              onPress={() => ajustarPeso(prato.passoG)}
+            >
+              <Icon name="plus" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.label}>Alguma observação?</Text>
+          <TextInput
+            style={styles.inputAnot}
+            multiline
+            maxLength={200}
+            value={observacao}
+            onChangeText={setObservacao}
+            placeholder="Ex: sem cebola, ponto da carne, separar molho…"
+            placeholderTextColor={colors.placeholder}
+          />
         </View>
-        <TouchableOpacity style={styles.btComprar} onPress={adicionarAoCarrinho}>
-          <Icon name="shopping-bag" size={18} color={colors.textInverse} />
-          <Text style={styles.btComprarTxt}>Adicionar</Text>
+
+        <View style={styles.rodape}>
+          <View>
+            <Text style={styles.rodapeLabel}>Total</Text>
+            <Text style={styles.rodapeValor}>R$ {preco.toFixed(2)}</Text>
+          </View>
+          <TouchableOpacity style={styles.btComprar} onPress={adicionarAoCarrinho}>
+            <Icon name="shopping-bag" size={18} color={colors.textInverse} />
+            <Text style={styles.btComprarTxt}>Adicionar</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {mostrarBanner && (
+        <TouchableOpacity
+          style={styles.banner}
+          onPress={() => navigation.navigate('Carrinho')}
+          activeOpacity={0.9}
+        >
+          <Icon name="shopping-bag" size={16} color="#fff" />
+          <Text style={styles.bannerTxt}>Ver carrinho</Text>
+          <Icon name="chevron-right" size={16} color="#fff" />
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, backgroundColor: colors.background },
   loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   imagem: { width: '100%', height: 240, backgroundColor: colors.surfaceAlt },
@@ -350,4 +346,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   btComprarTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 15 },
+
+  banner: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  bannerTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

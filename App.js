@@ -71,17 +71,17 @@ export default function App() {
         <Stack.Screen
           name="Arroz"
           component={Arroz}
-          options={{ title: 'Arroz Branco' }}
+          options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
         />
         <Stack.Screen
           name="Feijao"
           component={Feijao}
-          options={{ title: 'Feijão Preto' }}
+          options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
         />
         <Stack.Screen
           name="Macarrao"
           component={Macarrao}
-          options={{ title: 'Macarrão' }}
+          options={({ route }) => ({ title: route.params?.restaurantNome || 'Prato' })}
         />
         <Stack.Screen
           name="InscrevaseRestaurante"
