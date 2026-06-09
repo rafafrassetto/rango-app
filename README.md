@@ -163,3 +163,7 @@ O arquivo `render.yaml` já está pronto. No painel do Render:
 2. Configure `DATABASE_URL` como secret
 3. O endpoint público vai ficar em `https://rango-api.onrender.com`
 4. Atualize `EXPO_PUBLIC_API_URL` no `.env` do app pra esse endpoint
+
+## Integração com o app web (Front-end)
+
+O Rango App compartilha o **mesmo banco PostgreSQL (Supabase)** com o app web da disciplina de Front-end. Restaurantes, pratos e pedidos criados em qualquer um dos lados aparecem no outro — sem duplicar backend. No app, o botão **"Acessar versão web"** (tela de Perfil) abre a URL definida em `EXPO_PUBLIC_WEB_URL`.

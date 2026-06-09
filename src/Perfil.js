@@ -8,11 +8,15 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
 import { Session } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
+
+// Integração com o app web (Front-end) — mesma base de dados (Supabase).
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://SEU-APP-WEB.vercel.app';
 
 export default function Perfil({ navigation }) {
   const [user, setUser] = useState(null);
@@ -67,6 +71,12 @@ export default function Perfil({ navigation }) {
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   }
 
+  function abrirVersaoWeb() {
+    Linking.openURL(WEB_URL).catch(() =>
+      Alert.alert('Ops', 'Não foi possível abrir a versão web.')
+    );
+  }
+
   async function sair() {
     await Session.clear();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -112,6 +122,12 @@ export default function Perfil({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity style={styles.btWeb} onPress={abrirVersaoWeb}>
+        <Icon name="globe" size={16} color={colors.primary} />
+        <Text style={styles.btWebTxt}>Acessar versão web</Text>
+        <Icon name="external-link" size={14} color={colors.primary} />
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.btSair} onPress={sair}>
         <Icon name="log-out" size={16} color={colors.textPrimary} />
         <Text style={styles.btSairTxt}>Sair</Text>
@@ -148,6 +164,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, alignItems: 'center', marginTop: 10,
   },
   btSalvarTxt: { color: colors.textInverse, fontWeight: '700' },
+
+  btWeb: {
+    marginTop: 16, paddingVertical: 12, borderRadius: radius.md,
+    backgroundColor: colors.primaryLight, alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'center', gap: 8,
+    borderWidth: 1, borderColor: colors.primary,
+  },
+  btWebTxt: { color: colors.primary, fontWeight: '700' },
 
   btSair: {
     marginTop: 16, paddingVertical: 12, borderRadius: radius.md,
