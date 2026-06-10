@@ -38,8 +38,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "rango-app-satc"
+        "projectId": "75ea82b9-5539-455d-9cd7-37b7d5726d1f"
       }
-    }
+    },
+    "owner": "rafafrassetto"
   }
 }
