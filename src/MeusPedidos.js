@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Orders, CancelFee, CANCEL_FEE_AMOUNT } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { formatBRL } from './services/format';
+import { gerarReciboPdf } from './services/reciboPdf';
 
 const STATUS_COR = {
   'Em preparo': colors.warning,
@@ -56,6 +57,14 @@ export default function MeusPedidos({ navigation }) {
     );
   }
 
+  async function emitirRecibo(pedido) {
+    try {
+      await gerarReciboPdf(pedido);
+    } catch (e) {
+      Alert.alert('Ops', 'Não foi possível gerar o recibo agora.');
+    }
+  }
+
   function formatarData(iso) {
     try { return new Date(iso).toLocaleString('pt-BR'); }
     catch { return iso; }
@@ -87,6 +96,12 @@ export default function MeusPedidos({ navigation }) {
             onPress={() => confirmarCancelamento(item.id)}
           >
             <Text style={styles.btCancelarTxt}>Cancelar pedido</Text>
+          </TouchableOpacity>
+        )}
+
+        {item.status === 'Entregue' && (
+          <TouchableOpacity style={styles.btRecibo} onPress={() => emitirRecibo(item)}>
+            <Text style={styles.btReciboTxt}>Recibo em PDF</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -133,6 +148,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center',
   },
   btCancelarTxt: { color: colors.danger, fontWeight: '700' },
+  btRecibo: {
+    marginTop: 8, backgroundColor: colors.primaryLight,
+    borderWidth: 1, borderColor: colors.primary,
+    paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center',
+  },
+  btReciboTxt: { color: colors.primary, fontWeight: '700' },
   avisoTaxa: {
     backgroundColor: '#FFF4E5',
     borderLeftWidth: 4, borderLeftColor: colors.warning,

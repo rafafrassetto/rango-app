@@ -69,7 +69,9 @@ export default function AcompanharPedido({ navigation, route }) {
   }
 
   async function marcarRecebido() {
-    await Orders.update(orderId, { status: 'Entregue' });
+    if (pedido?.status !== 'Entregue') {
+      await Orders.update(orderId, { status: 'Entregue' });
+    }
     setEtapaAtual(ETAPAS.length - 1);
     navigation.replace('AvaliarPedido', {
       orderId,

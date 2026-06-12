@@ -16,7 +16,7 @@ import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
 
 // Integração com o app web (Front-end) — mesma base de dados (Supabase).
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://SEU-APP-WEB.vercel.app';
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || '';
 
 export default function Perfil({ navigation }) {
   const [user, setUser] = useState(null);
@@ -43,11 +43,7 @@ export default function Perfil({ navigation }) {
       Alert.alert('Resultado', String(json));
       setNovaSenha('');
     } catch (e) {
-      Alert.alert('Offline', 'Senha foi atualizada localmente.');
-      const atualizado = { ...user, senha: novaSenha };
-      await Session.set(atualizado);
-      setUser(atualizado);
-      setNovaSenha('');
+      Alert.alert('Sem conexão', 'Não foi possível atualizar a senha agora. Tente novamente.');
     }
   }
 
@@ -60,12 +56,17 @@ export default function Perfil({ navigation }) {
 
   async function excluirConta() {
     try {
-      await fetch(`${API_URL}/delete`, {
+      const r = await fetch(`${API_URL}/delete`, {
         method: 'DELETE',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email }),
       });
-    } catch (e) { /* segue offline */ }
+      if (!r.ok) {
+        const msg = await r.json().catch(() => 'Não foi possível excluir a conta.');
+        Alert.alert('Não foi possível excluir', String(msg));
+        return;
+      }
+    } catch (e) { /* sem conexão: desloga mesmo assim */ }
     await Session.clear();
     Alert.alert('Conta excluída', 'Você será desconectado.');
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -122,11 +123,13 @@ export default function Perfil({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.btWeb} onPress={abrirVersaoWeb}>
-        <Icon name="globe" size={16} color={colors.primary} />
-        <Text style={styles.btWebTxt}>Acessar versão web</Text>
-        <Icon name="external-link" size={14} color={colors.primary} />
-      </TouchableOpacity>
+      {WEB_URL ? (
+        <TouchableOpacity style={styles.btWeb} onPress={abrirVersaoWeb}>
+          <Icon name="globe" size={16} color={colors.primary} />
+          <Text style={styles.btWebTxt}>Acessar versão web</Text>
+          <Icon name="external-link" size={14} color={colors.primary} />
+        </TouchableOpacity>
+      ) : null}
 
       <TouchableOpacity style={styles.btSair} onPress={sair}>
         <Icon name="log-out" size={16} color={colors.textPrimary} />

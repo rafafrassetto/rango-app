@@ -58,8 +58,9 @@ app.get('/users', async (req, res) => {
 
 app.put('/update', async (req, res) => {
   try {
+    const senhaHash = await bcrypt.hash(req.body.novaSenha, 10);
     const [count] = await User.update(
-      { senha: req.body.novaSenha },
+      { senha: senhaHash },
       { where: { email: req.body.email } }
     );
     if (count) return res.send(JSON.stringify('Senha atualizada com sucesso!'));
@@ -71,9 +72,17 @@ app.put('/update', async (req, res) => {
 
 app.delete('/delete', async (req, res) => {
   try {
-    const count = await User.destroy({ where: { email: req.body.email } });
-    if (count) return res.send(JSON.stringify('Usuario deletado com sucesso!'));
-    res.status(404).send(JSON.stringify('Usuário não encontrado'));
+    const user = await User.findOne({ where: { email: req.body.email } });
+    if (!user) return res.status(404).send(JSON.stringify('Usuário não encontrado'));
+    const pedidos = await Order.count({ where: { user_id: user.id } });
+    if (pedidos > 0) {
+      return res.status(400).send(
+        JSON.stringify('Conta possui pedidos vinculados e não pode ser excluída.')
+      );
+    }
+    await Address.destroy({ where: { user_id: user.id } });
+    await user.destroy();
+    res.send(JSON.stringify('Usuario deletado com sucesso!'));
   } catch (e) {
     res.status(500).send(JSON.stringify('Erro interno'));
   }

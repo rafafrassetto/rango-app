@@ -42,13 +42,6 @@ export default function Login({ navigation }) {
       return;
     }
 
-    // Acesso de Desenvolvedor (Bypass)
-    if (email === 'teste@teste.com' && senha === '123456') {
-      await Session.set({ nome: 'Usuário Teste', email: 'teste@teste.com' });
-      navigation.navigate('Home');
-      return;
-    }
-
     setCarregando(true);
     setMessage('');
     try {
