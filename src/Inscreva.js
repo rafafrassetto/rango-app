@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Session } from './services/storage';
+import InputSenha from './components/InputSenha';
 import { colors, spacing, radius } from './theme/theme';
 import { API_URL } from './services/api';
 
@@ -77,7 +78,7 @@ export default function Inscreva({ navigation }) {
           <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" keyboardType="phone-pad" placeholderTextColor={colors.placeholder} />
 
           <Text style={styles.label}>Senha</Text>
-          <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="••••••••" placeholderTextColor={colors.placeholder} />
+          <InputSenha style={styles.input} value={senha} onChangeText={setSenha} placeholder="••••••••" />
 
           <TouchableOpacity style={styles.bt} onPress={registerUser} disabled={enviando}>
             {enviando

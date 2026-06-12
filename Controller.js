@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const models = require('./models');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors());
@@ -58,13 +60,14 @@ app.get('/users', async (req, res) => {
 
 app.put('/update', async (req, res) => {
   try {
-    const senhaHash = await bcrypt.hash(req.body.novaSenha, 10);
-    const [count] = await User.update(
-      { senha: senhaHash },
-      { where: { email: req.body.email } }
-    );
-    if (count) return res.send(JSON.stringify('Senha atualizada com sucesso!'));
-    res.status(404).send(JSON.stringify('Usuário não encontrado'));
+    const { email, senhaAtual, novaSenha } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(404).send(JSON.stringify('Usuário não encontrado'));
+    const confere = senhaAtual && (await bcrypt.compare(senhaAtual, user.senha));
+    if (!confere) return res.status(401).send(JSON.stringify('Senha atual incorreta'));
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await user.update({ senha: senhaHash });
+    res.send(JSON.stringify('Senha atualizada com sucesso!'));
   } catch (e) {
     res.status(500).send(JSON.stringify('Erro interno'));
   }
@@ -85,6 +88,134 @@ app.delete('/delete', async (req, res) => {
     res.send(JSON.stringify('Usuario deletado com sucesso!'));
   } catch (e) {
     res.status(500).send(JSON.stringify('Erro interno'));
+  }
+});
+
+// =================== RECUPERAÇÃO DE SENHA ===================
+// Fluxo seguro: o usuário pede o link por e-mail; o token aleatório fica
+// guardado com hash e expira em 1 hora. O e-mail leva a uma página ponte
+// (GET /reset/:token) que abre o app via deep link rangoapp://.
+const PUBLIC_URL = process.env.PUBLIC_URL || 'https://rango-api.onrender.com';
+const APP_SCHEME = 'rangoapp';
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function enviarEmailReset(para, nome, link) {
+  // Sem SMTP configurado, o link sai no log do servidor (útil em dev).
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log(`[reset-senha] SMTP não configurado. Link para ${para}: ${link}`);
+    return;
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: `"Rango App" <${process.env.SMTP_USER}>`,
+      to: para,
+      subject: 'Redefinição de senha — Rango App',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:440px;margin:0 auto;">
+          <div style="background:#EA1D2C;border-radius:12px 12px 0 0;padding:18px;text-align:center;">
+            <span style="color:#fff;font-size:22px;font-weight:bold;">Rango App</span>
+          </div>
+          <div style="border:1px solid #eee;border-top:0;border-radius:0 0 12px 12px;padding:24px;">
+            <p>Olá, <strong>${nome || ''}</strong>!</p>
+            <p>Recebemos um pedido para redefinir a sua senha. Toque no botão abaixo
+            <strong>pelo celular com o Rango App instalado</strong>:</p>
+            <p style="text-align:center;margin:26px 0;">
+              <a href="${link}" style="background:#EA1D2C;color:#fff;text-decoration:none;
+                 padding:14px 28px;border-radius:10px;font-weight:bold;display:inline-block;">
+                Redefinir minha senha
+              </a>
+            </p>
+            <p style="color:#888;font-size:12px;">O link expira em 1 hora. Se você não pediu
+            a redefinição, ignore este e-mail — sua senha continua a mesma.</p>
+          </div>
+        </div>`,
+    });
+  } catch (e) {
+    console.log(`[reset-senha] Falha ao enviar e-mail (${e.message}). Link: ${link}`);
+  }
+}
+
+function paginaReset(deepLink) {
+  const corpo = deepLink
+    ? `<p style="color:#444;">Toque no botão para abrir o aplicativo e criar sua nova senha.</p>
+       <a href="${deepLink}" style="display:inline-block;background:#EA1D2C;color:#fff;
+          padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:bold;">Abrir no Rango App</a>
+       <p style="color:#9A9A9A;font-size:12px;margin-top:18px;">Abra este link no celular onde o app está instalado.</p>
+       <script>setTimeout(function(){ window.location = ${JSON.stringify(deepLink)}; }, 400);</script>`
+    : `<p style="color:#444;">Este link de redefinição é <strong>inválido ou expirou</strong>.</p>
+       <p style="color:#9A9A9A;font-size:13px;">Volte ao app e solicite um novo em “Esqueceu a senha?”.</p>`;
+  return `<!doctype html><html lang="pt-br"><head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Rango App — Redefinir senha</title></head>
+    <body style="font-family:Arial,sans-serif;background:#F7F7F8;text-align:center;padding:48px 16px;">
+      <div style="max-width:400px;margin:0 auto;background:#fff;border-radius:14px;padding:30px;
+                  box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+        <h1 style="color:#EA1D2C;margin:0 0 14px;">Rango App</h1>
+        ${corpo}
+      </div>
+    </body></html>`;
+}
+
+// Resposta sempre genérica para não revelar quais e-mails existem na base.
+app.post('/esqueci-senha', async (req, res) => {
+  const mensagem = 'Se este e-mail estiver cadastrado, você receberá um link de redefinição.';
+  try {
+    const email = (req.body.email || '').trim();
+    const user = email ? await User.findOne({ where: { email } }) : null;
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await user.update({
+        reset_token: hashToken(token),
+        reset_token_expira: new Date(Date.now() + 60 * 60 * 1000),
+      });
+      await enviarEmailReset(user.email, user.nome, `${PUBLIC_URL}/reset/${token}`);
+    }
+    res.json({ ok: true, mensagem });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// Página ponte: e-mails não abrem rangoapp:// direto, então o link do e-mail
+// é HTTPS e esta página redireciona para o deep link do app.
+app.get('/reset/:token', async (req, res) => {
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  try {
+    const user = await User.findOne({ where: { reset_token: hashToken(req.params.token) } });
+    const valido = user && user.reset_token_expira && new Date(user.reset_token_expira) > new Date();
+    if (!valido) return res.status(400).send(paginaReset(null));
+    res.send(paginaReset(`${APP_SCHEME}://redefinir-senha?token=${req.params.token}`));
+  } catch (e) {
+    res.status(400).send(paginaReset(null));
+  }
+});
+
+app.post('/redefinir-senha', async (req, res) => {
+  try {
+    const { token, novaSenha } = req.body;
+    if (!token || !novaSenha || String(novaSenha).length < 6) {
+      return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
+    }
+    const user = await User.findOne({ where: { reset_token: hashToken(token) } });
+    const valido = user && user.reset_token_expira && new Date(user.reset_token_expira) > new Date();
+    if (!valido) {
+      return res.status(400).json({ erro: 'Link inválido ou expirado. Solicite um novo.' });
+    }
+    await user.update({
+      senha: await bcrypt.hash(String(novaSenha), 10),
+      reset_token: null,
+      reset_token_expira: null,
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
   }
 });
 

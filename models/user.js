@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes) => {
       },
       senha: { type: DataTypes.STRING, allowNull: false },
       auth_id: { type: DataTypes.UUID, allowNull: true },
+      reset_token: { type: DataTypes.STRING, allowNull: true },
+      reset_token_expira: { type: DataTypes.DATE, allowNull: true },
     },
     {
       sequelize,

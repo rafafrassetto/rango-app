@@ -22,6 +22,7 @@ import TermosUso from './src/TermosUso';
 import Pagamento from './src/Pagamento';
 import AcompanharPedido from './src/AcompanharPedido';
 import AvaliarPedido from './src/AvaliarPedido';
+import RedefinirSenha from './src/RedefinirSenha';
 
 // Módulo do restaurante
 import LoginRestaurante from './src/restaurante/LoginRestaurante';
@@ -32,6 +33,17 @@ import { colors } from './src/theme/theme';
 
 const Stack = createNativeStackNavigator();
 
+// Deep linking: o link do e-mail (rangoapp://redefinir-senha?token=...)
+// abre o app direto na tela de redefinição de senha.
+const linking = {
+  prefixes: ['rangoapp://'],
+  config: {
+    screens: {
+      RedefinirSenha: 'redefinir-senha',
+    },
+  },
+};
+
 const headerEstilo = {
   headerStyle: { backgroundColor: colors.primary },
   headerTintColor: colors.textInverse,
@@ -40,7 +52,7 @@ const headerEstilo = {
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={headerEstilo}
@@ -60,6 +72,11 @@ export default function App() {
           name="Esqueceu"
           component={Esqueceu}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RedefinirSenha"
+          component={RedefinirSenha}
+          options={{ title: 'Redefinir senha', headerLeft: () => null }}
         />
         <Stack.Screen
           name="Home"

@@ -3,6 +3,7 @@ import {
   StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ScrollView,
 } from 'react-native';
 import { RestauranteAuth } from './services/restauranteAuth';
+import InputSenha from './components/InputSenha';
 import { colors, spacing, radius } from './theme/theme';
 
 export default function InscrevaseRestaurante({ navigation }) {
@@ -41,7 +42,7 @@ export default function InscrevaseRestaurante({ navigation }) {
         <TextInput style={styles.input} value={form.cnpj} onChangeText={(t) => setCampo('cnpj', t)} keyboardType="numeric" placeholderTextColor={colors.placeholder} />
 
         <Text style={styles.label}>Senha</Text>
-        <TextInput style={styles.input} value={form.senha} onChangeText={(t) => setCampo('senha', t)} secureTextEntry placeholderTextColor={colors.placeholder} />
+        <InputSenha style={styles.input} value={form.senha} onChangeText={(t) => setCampo('senha', t)} placeholder="••••••••" />
 
         <TouchableOpacity style={styles.bt} onPress={inscrever}>
           <Text style={styles.btTxt}>Cadastrar restaurante</Text>

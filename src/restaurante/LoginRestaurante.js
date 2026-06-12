@@ -6,6 +6,7 @@ import {
 import Icon from '@expo/vector-icons/Feather';
 import logo from '../../assets/Logo.png';
 import { RestauranteAuth } from '../services/restauranteAuth';
+import InputSenha from '../components/InputSenha';
 import { colors, spacing, radius, shadow } from '../theme/theme';
 
 export default function LoginRestaurante({ navigation }) {
@@ -28,13 +29,6 @@ export default function LoginRestaurante({ navigation }) {
 
   async function entrar() {
     if (!email || !senha) return setErro('Preencha e-mail e senha.');
-
-    // Acesso de Desenvolvedor (Bypass)
-    if (email === 'teste@teste.com' && senha === '123456') {
-      await RestauranteAuth.setSession({ restaurante: 'Restaurante Teste', email: 'teste@teste.com' });
-      navigation.reset({ index: 0, routes: [{ name: 'PainelRestaurante' }] });
-      return;
-    }
 
     setCarregando(true); setErro('');
     try {
@@ -95,10 +89,9 @@ export default function LoginRestaurante({ navigation }) {
           />
 
           <Text style={styles.label}>Senha</Text>
-          <TextInput
+          <InputSenha
             style={styles.input} value={senha} onChangeText={setSenha}
-            placeholder="••••••••" placeholderTextColor={colors.placeholder}
-            secureTextEntry
+            placeholder="••••••••"
           />
 
           {erro ? <Text style={styles.erro}>{erro}</Text> : null}
@@ -117,7 +110,7 @@ export default function LoginRestaurante({ navigation }) {
           <View style={styles.dicaBox}>
             <Icon name="info" size={14} color={colors.textSecondary} />
             <Text style={styles.dicaTxt}>
-              Demo: restaurante@rango.app / 123456
+              Demo: contato@cantinadoleo.com.br / restaurante123
             </Text>
           </View>
         </View>

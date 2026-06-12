@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
   Alert,
@@ -13,14 +12,15 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import Icon from '@expo/vector-icons/Feather';
 import logo from '../assets/Logo.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
 
 export default function Esqueceu({ navigation }) {
   const [email, setEmail] = useState('');
-  const [novaSenha, setNovaSenha] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
 
   // Animação da Logo
   const animValue = useRef(new Animated.Value(0)).current;
@@ -34,22 +34,21 @@ export default function Esqueceu({ navigation }) {
     }).start();
   }, []);
 
-  async function recuperar() {
-    if (!email || !novaSenha) {
-      Alert.alert('Atenção', 'Preencha email e a nova senha.');
+  // Pede ao backend o envio do link de redefinição. A resposta é sempre
+  // genérica (não revela se o e-mail existe).
+  async function solicitarLink() {
+    if (!email.trim()) {
+      Alert.alert('Atenção', 'Informe o seu e-mail.');
       return;
     }
     setEnviando(true);
     try {
-      const r = await fetch(`${API_URL}/update`, {
-        method: 'PUT',
+      await fetch(`${API_URL}/esqueci-senha`, {
+        method: 'POST',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, novaSenha }),
+        body: JSON.stringify({ email: email.trim() }),
       });
-      const txt = await r.json();
-      Alert.alert('Tudo certo', String(txt), [
-        { text: 'OK', onPress: () => navigation.navigate('Login') },
-      ]);
+      setEnviado(true);
     } catch (e) {
       Alert.alert('Servidor offline', 'Tente novamente quando o backend estiver online.');
     } finally {
@@ -84,41 +83,53 @@ export default function Esqueceu({ navigation }) {
           />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitulo}>Recuperar acesso</Text>
-          <Text style={styles.legenda}>Defina sua nova senha abaixo.</Text>
+        {enviado ? (
+          <View style={styles.card}>
+            <View style={styles.iconeOk}>
+              <Icon name="mail" size={30} color={colors.primary} />
+            </View>
+            <Text style={[styles.cardTitulo, { textAlign: 'center' }]}>Confira seu e-mail</Text>
+            <Text style={[styles.legenda, { textAlign: 'center' }]}>
+              Se {email.trim()} estiver cadastrado, você receberá um link para
+              redefinir a senha. O link abre direto aqui no app e expira em 1 hora.
+            </Text>
+            <TouchableOpacity style={styles.bt} onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.btTxt}>Voltar para o login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setEnviado(false)} style={styles.linkVoltar}>
+              <Text style={styles.linkVoltarTxt}>Enviar para outro e-mail</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.cardTitulo}>Recuperar acesso</Text>
+            <Text style={styles.legenda}>
+              Informe o e-mail da sua conta. Vamos enviar um link seguro para você
+              criar uma nova senha.
+            </Text>
 
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="voce@email.com"
-            placeholderTextColor={colors.placeholder}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+            <Text style={styles.label}>E-mail</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="voce@email.com"
+              placeholderTextColor={colors.placeholder}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
 
-          <Text style={styles.label}>Nova senha</Text>
-          <TextInput
-            style={styles.input}
-            value={novaSenha}
-            onChangeText={setNovaSenha}
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor={colors.placeholder}
-          />
+            <TouchableOpacity style={styles.bt} onPress={solicitarLink} disabled={enviando}>
+              {enviando
+                ? <ActivityIndicator color={colors.textInverse} />
+                : <Text style={styles.btTxt}>Enviar link de redefinição</Text>}
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bt} onPress={recuperar} disabled={enviando}>
-            {enviando
-              ? <ActivityIndicator color={colors.textInverse} />
-              : <Text style={styles.btTxt}>Salvar nova senha</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkVoltar}>
-            <Text style={styles.linkVoltarTxt}>Voltar para o login</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkVoltar}>
+              <Text style={styles.linkVoltarTxt}>Voltar para o login</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -143,8 +154,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     ...shadow.card,
   },
+  iconeOk: {
+    alignSelf: 'center',
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 10,
+  },
   cardTitulo: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
-  legenda: { color: colors.textSecondary, fontSize: 13, marginBottom: 14 },
+  legenda: { color: colors.textSecondary, fontSize: 13, marginBottom: 14, lineHeight: 19 },
   label: { color: colors.textSecondary, fontSize: 12, marginTop: 8, marginBottom: 4 },
   input: {
     backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder,

@@ -14,6 +14,7 @@ import {
   Animated,
 } from 'react-native';
 import logo from '../assets/Logo.png';
+import InputSenha from './components/InputSenha';
 import { Session } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
@@ -118,13 +119,11 @@ export default function Login({ navigation }) {
           />
 
           <Text style={styles.label}>Senha</Text>
-          <TextInput
-            secureTextEntry
+          <InputSenha
             style={styles.input}
             placeholder="••••••••"
             onChangeText={setSenha}
             value={senha}
-            placeholderTextColor={colors.placeholder}
           />
 
           <TouchableOpacity

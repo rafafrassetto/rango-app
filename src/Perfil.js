@@ -14,12 +14,14 @@ import Icon from '@expo/vector-icons/Feather';
 import { Session } from './services/storage';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
+import InputSenha from './components/InputSenha';
 
 // Integração com o app web (Front-end) — mesma base de dados (Supabase).
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || '';
 
 export default function Perfil({ navigation }) {
   const [user, setUser] = useState(null);
+  const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [carregando, setCarregando] = useState(true);
 
@@ -32,16 +34,21 @@ export default function Perfil({ navigation }) {
   }, []);
 
   async function atualizarSenha() {
-    if (!novaSenha) return Alert.alert('Atenção', 'Informe a nova senha.');
+    if (!senhaAtual || !novaSenha) {
+      return Alert.alert('Atenção', 'Informe a senha atual e a nova senha.');
+    }
     try {
       const response = await fetch(`${API_URL}/update`, {
         method: 'PUT',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, novaSenha }),
+        body: JSON.stringify({ email: user.email, senhaAtual, novaSenha }),
       });
       const json = await response.json();
       Alert.alert('Resultado', String(json));
-      setNovaSenha('');
+      if (response.ok) {
+        setSenhaAtual('');
+        setNovaSenha('');
+      }
     } catch (e) {
       Alert.alert('Sem conexão', 'Não foi possível atualizar a senha agora. Tente novamente.');
     }
@@ -110,13 +117,17 @@ export default function Perfil({ navigation }) {
 
       <Text style={styles.subtitulo}>Alterar senha</Text>
       <View style={styles.card}>
-        <TextInput
+        <InputSenha
           style={styles.input}
-          secureTextEntry
+          value={senhaAtual}
+          onChangeText={setSenhaAtual}
+          placeholder="Senha atual"
+        />
+        <InputSenha
+          style={[styles.input, { marginTop: 10 }]}
           value={novaSenha}
           onChangeText={setNovaSenha}
           placeholder="Nova senha"
-          placeholderTextColor={colors.placeholder}
         />
         <TouchableOpacity style={styles.btSalvar} onPress={atualizarSenha}>
           <Text style={styles.btSalvarTxt}>Atualizar senha</Text>
