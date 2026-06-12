@@ -43,7 +43,7 @@ export default function PainelRestaurante({ navigation }) {
       : [];
 
     setStats({
-      pedidosHoje: pedidosHoje.length,
+      pedidosHoje: pedidos.length,
       faturamento,
       pratos: cat.length,
     });
@@ -94,7 +94,7 @@ export default function PainelRestaurante({ navigation }) {
       <View style={styles.kpisBox}>
         <View style={styles.kpi}>
           <Text style={styles.kpiValor}>{stats.pedidosHoje}</Text>
-          <Text style={styles.kpiLabel}>Pedidos hoje</Text>
+          <Text style={styles.kpiLabel}>Pedidos</Text>
         </View>
         <View style={styles.kpi}>
           <Text style={styles.kpiValor}>R$ {stats.faturamento.toFixed(2)}</Text>

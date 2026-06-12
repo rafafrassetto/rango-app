@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
-import { Catalogo, IMAGENS } from '../services/catalogo';
+import { Catalogo, IMAGENS, imagemDoPrato } from '../services/catalogo';
 import { RestauranteAuth } from '../services/restauranteAuth';
 import { colors, spacing, radius, shadow } from '../theme/theme';
 
@@ -66,7 +66,7 @@ export default function GerenciarCardapio({ navigation, onChange }) {
         pratos.map((p) => (
           <View key={p.id} style={styles.card}>
             <Image
-              source={IMAGENS[p.imagemKey] || IMAGENS.arrozbranco}
+              source={imagemDoPrato(p)}
               style={styles.img}
               resizeMode="cover"
             />

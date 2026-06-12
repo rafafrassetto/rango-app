@@ -10,6 +10,9 @@ import { API_URL } from './services/api';
 // Tela aberta pelo deep link do e-mail: rangoapp://redefinir-senha?token=...
 export default function RedefinirSenha({ navigation, route }) {
   const token = route?.params?.token || '';
+  // o link do e-mail traz &tipo=restaurante quando o reset é do parceiro
+  const tipoRestaurante = route?.params?.tipo === 'restaurante';
+  const telaLogin = tipoRestaurante ? 'LoginRestaurante' : 'Login';
   const [senha, setSenha] = useState('');
   const [confirma, setConfirma] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -29,7 +32,7 @@ export default function RedefinirSenha({ navigation, route }) {
       const r = await fetch(`${API_URL}/redefinir-senha`, {
         method: 'POST',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, novaSenha: senha }),
+        body: JSON.stringify({ token, novaSenha: senha, tipo: tipoRestaurante ? 'restaurante' : 'cliente' }),
       });
       const json = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -38,7 +41,7 @@ export default function RedefinirSenha({ navigation, route }) {
         Alert.alert('Senha redefinida!', 'Agora é só entrar com a nova senha.', [
           {
             text: 'OK',
-            onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
+            onPress: () => navigation.reset({ index: 0, routes: [{ name: telaLogin }] }),
           },
         ]);
       }
@@ -86,7 +89,7 @@ export default function RedefinirSenha({ navigation, route }) {
 
         <TouchableOpacity
           style={styles.linkVoltar}
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: telaLogin }] })}
         >
           <Text style={styles.linkVoltarTxt}>Ir para o login</Text>
         </TouchableOpacity>

@@ -94,6 +94,13 @@ export default function LoginRestaurante({ navigation }) {
             placeholder="••••••••"
           />
 
+          <TouchableOpacity
+            style={styles.linkEsqueceu}
+            onPress={() => navigation.navigate('Esqueceu', { tipo: 'restaurante' })}
+          >
+            <Text style={styles.linkEsqueceuTxt}>Esqueceu a senha?</Text>
+          </TouchableOpacity>
+
           {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
           <TouchableOpacity style={styles.bt} onPress={entrar} disabled={carregando}>
@@ -107,12 +114,6 @@ export default function LoginRestaurante({ navigation }) {
             <Text style={styles.btOutlineTxt}>Quero cadastrar meu restaurante</Text>
           </TouchableOpacity>
 
-          <View style={styles.dicaBox}>
-            <Icon name="info" size={14} color={colors.textSecondary} />
-            <Text style={styles.dicaTxt}>
-              Demo: contato@cantinadoleo.com.br / restaurante123
-            </Text>
-          </View>
         </View>
 
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.voltar}>
@@ -151,6 +152,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, padding: 12, color: colors.textPrimary,
   },
   erro: { color: colors.danger, marginTop: 8 },
+  linkEsqueceu: { alignSelf: 'flex-end', marginTop: 8 },
+  linkEsqueceuTxt: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   bt: {
     backgroundColor: colors.primary, paddingVertical: 14,
     borderRadius: radius.md, alignItems: 'center', marginTop: 18,
@@ -162,13 +165,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderWidth: 1, borderColor: colors.divider,
   },
   btOutlineTxt: { color: colors.textPrimary, fontWeight: '600' },
-
-  dicaBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    marginTop: 14, padding: 10, backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.sm,
-  },
-  dicaTxt: { color: colors.textSecondary, fontSize: 12 },
 
   voltar: { padding: spacing.lg, alignItems: 'center', marginTop: 4 },
   voltarTxt: { color: colors.textSecondary, fontSize: 13 },

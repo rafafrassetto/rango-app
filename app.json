@@ -5,6 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "rangoapp",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "O Rango App usa a câmera para fotografar os pratos do cardápio.",
+          "photosPermission": "O Rango App acessa suas fotos para você escolher a imagem do prato."
+        }
+      ]
+    ],
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
@@ -29,6 +38,7 @@
         "backgroundColor": "#EA1D2C"
       },
       "permissions": [
+        "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "VIBRATE"

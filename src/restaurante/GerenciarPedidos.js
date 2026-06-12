@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  StyleSheet, View, Text, TouchableOpacity, Alert,
+  StyleSheet, View, Text,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
@@ -37,30 +37,6 @@ export default function GerenciarPedidos({ onChange }) {
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
-  async function avancarStatus(p) {
-    const idx = STATUS_FLUXO.indexOf(p.status);
-    const proximo = idx >= 0 && idx < STATUS_FLUXO.length - 1
-      ? STATUS_FLUXO[idx + 1] : null;
-    if (!proximo) return Alert.alert('Pedido', 'Esse pedido já foi entregue.');
-    await Orders.update(p.id, { ...p, status: proximo });
-    carregar();
-    onChange && onChange();
-  }
-
-  async function cancelar(p) {
-    Alert.alert('Cancelar pedido', `Cancelar pedido #${p.id.slice(-5)}?`, [
-      { text: 'Voltar', style: 'cancel' },
-      {
-        text: 'Cancelar pedido', style: 'destructive',
-        onPress: async () => {
-          await Orders.update(p.id, { ...p, status: 'Cancelado' });
-          carregar();
-          onChange && onChange();
-        },
-      },
-    ]);
-  }
-
   if (pedidos.length === 0) {
     return (
       <View style={styles.vazio}>
@@ -94,18 +70,6 @@ export default function GerenciarPedidos({ onChange }) {
 
             <View style={styles.cardFooter}>
               <Text style={styles.total}>R$ {Number(p.total || 0).toFixed(2)}</Text>
-              <View style={styles.acoes}>
-                {p.status !== 'Cancelado' && p.status !== 'Entregue' && (
-                  <>
-                    <TouchableOpacity style={styles.btCancelar} onPress={() => cancelar(p)}>
-                      <Text style={styles.btCancelarTxt}>Cancelar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.btAvancar} onPress={() => avancarStatus(p)}>
-                      <Text style={styles.btAvancarTxt}>Avançar</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
             </View>
           </View>
         );
@@ -135,9 +99,4 @@ const styles = StyleSheet.create({
 
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   total: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  acoes: { flexDirection: 'row', gap: 6 },
-  btCancelar: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm },
-  btCancelarTxt: { color: colors.danger, fontWeight: '700', fontSize: 12 },
-  btAvancar: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.primary, borderRadius: radius.sm },
-  btAvancarTxt: { color: colors.textInverse, fontWeight: '700', fontSize: 12 },
 });

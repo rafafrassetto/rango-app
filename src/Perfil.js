@@ -8,27 +8,36 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
-  Linking,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
-import { Session } from './services/storage';
+import { Session, Ratings } from './services/storage';
+import { Restaurants } from './services/restaurants';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
 import InputSenha from './components/InputSenha';
-
-// Integração com o app web (Front-end) — mesma base de dados (Supabase).
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || '';
 
 export default function Perfil({ navigation }) {
   const [user, setUser] = useState(null);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [avaliacoes, setAvaliacoes] = useState([]);
+  const [nomesRest, setNomesRest] = useState({});
 
   useEffect(() => {
     (async () => {
       const u = await Session.get();
       setUser(u);
+      if (u?.id) {
+        const [avals, rests] = await Promise.all([
+          Ratings.list({ userId: u.id }),
+          Restaurants.list(),
+        ]);
+        setAvaliacoes(avals);
+        const mapa = {};
+        (rests || []).forEach((r) => { mapa[String(r.id)] = r.nome; });
+        setNomesRest(mapa);
+      }
       setCarregando(false);
     })();
   }, []);
@@ -77,12 +86,6 @@ export default function Perfil({ navigation }) {
     await Session.clear();
     Alert.alert('Conta excluída', 'Você será desconectado.');
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-  }
-
-  function abrirVersaoWeb() {
-    Linking.openURL(WEB_URL).catch(() =>
-      Alert.alert('Ops', 'Não foi possível abrir a versão web.')
-    );
   }
 
   async function sair() {
@@ -134,13 +137,34 @@ export default function Perfil({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {WEB_URL ? (
-        <TouchableOpacity style={styles.btWeb} onPress={abrirVersaoWeb}>
-          <Icon name="globe" size={16} color={colors.primary} />
-          <Text style={styles.btWebTxt}>Acessar versão web</Text>
-          <Icon name="external-link" size={14} color={colors.primary} />
-        </TouchableOpacity>
-      ) : null}
+      <Text style={styles.subtitulo}>Minhas avaliações</Text>
+      {avaliacoes.length === 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.semAval}>Você ainda não avaliou nenhum pedido.</Text>
+        </View>
+      ) : (
+        avaliacoes.map((a) => (
+          <View key={a.id} style={[styles.card, { marginBottom: 8 }]}>
+            <Text style={styles.avalRest}>
+              {nomesRest[String(a.restaurantId)] || 'Restaurante'}
+            </Text>
+            <View style={styles.avalLinha}>
+              <Text style={styles.avalLabel}>Entrega</Text>
+              <Estrelas valor={a.entrega} />
+            </View>
+            <View style={styles.avalLinha}>
+              <Text style={styles.avalLabel}>Comida</Text>
+              <Estrelas valor={a.restaurante} />
+            </View>
+            {a.comentario ? (
+              <Text style={styles.avalComentario}>"{a.comentario}"</Text>
+            ) : null}
+            <Text style={styles.avalData}>
+              {new Date(a.data).toLocaleDateString('pt-BR')}
+            </Text>
+          </View>
+        ))
+      )}
 
       <TouchableOpacity style={styles.btSair} onPress={sair}>
         <Icon name="log-out" size={16} color={colors.textPrimary} />
@@ -151,6 +175,21 @@ export default function Perfil({ navigation }) {
         <Text style={styles.btExcluirTxt}>Excluir minha conta</Text>
       </TouchableOpacity>
     </ScrollView>
+  );
+}
+
+function Estrelas({ valor }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Icon
+          key={n}
+          name="star"
+          size={14}
+          color={n <= Math.round(valor) ? '#F5B400' : colors.divider}
+        />
+      ))}
+    </View>
   );
 }
 
@@ -179,14 +218,6 @@ const styles = StyleSheet.create({
   },
   btSalvarTxt: { color: colors.textInverse, fontWeight: '700' },
 
-  btWeb: {
-    marginTop: 16, paddingVertical: 12, borderRadius: radius.md,
-    backgroundColor: colors.primaryLight, alignItems: 'center',
-    flexDirection: 'row', justifyContent: 'center', gap: 8,
-    borderWidth: 1, borderColor: colors.primary,
-  },
-  btWebTxt: { color: colors.primary, fontWeight: '700' },
-
   btSair: {
     marginTop: 16, paddingVertical: 12, borderRadius: radius.md,
     backgroundColor: colors.surface, alignItems: 'center',
@@ -197,4 +228,14 @@ const styles = StyleSheet.create({
 
   btExcluir: { marginTop: 10, paddingVertical: 12, alignItems: 'center' },
   btExcluirTxt: { color: colors.danger, fontWeight: '600' },
+
+  semAval: { color: colors.textSecondary, fontSize: 13 },
+  avalRest: { fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
+  avalLinha: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginVertical: 2,
+  },
+  avalLabel: { color: colors.textSecondary, fontSize: 12 },
+  avalComentario: { color: colors.textPrimary, fontStyle: 'italic', marginTop: 6, fontSize: 13 },
+  avalData: { color: colors.textMuted, fontSize: 11, marginTop: 6, textAlign: 'right' },
 });

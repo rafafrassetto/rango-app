@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       nome: { type: DataTypes.STRING, allowNull: false },
       descricao: DataTypes.TEXT,
       imagem_key: DataTypes.STRING,
-      imagem_url: DataTypes.STRING,
+      imagem_url: DataTypes.TEXT,
       preco_por_kg: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
       peso_min_g: { type: DataTypes.INTEGER, defaultValue: 100 },
       peso_max_g: { type: DataTypes.INTEGER, defaultValue: 2000 },

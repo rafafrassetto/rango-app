@@ -295,6 +295,7 @@ function mapRating(r) {
     id: String(r.id),
     orderId: r.order_id != null ? String(r.order_id) : null,
     restaurantId: r.restaurant_id != null ? String(r.restaurant_id) : null,
+    userId: r.user_id != null ? String(r.user_id) : null,
     entrega: Number(r.nota_entrega) || 0,
     restaurante: Number(r.nota_restaurante) || 0,
     comentario: r.comentario || '',
@@ -307,6 +308,7 @@ export const Ratings = {
     try {
       const params = new URLSearchParams();
       if (opts.restaurantId) params.set('restaurant_id', opts.restaurantId);
+      if (opts.userId) params.set('user_id', opts.userId);
       const qs = params.toString() ? `?${params}` : '';
       const lista = await apiRequest(`/ratings${qs}`);
       const mapped = lista.map(mapRating);

@@ -17,7 +17,10 @@ import logo from '../assets/Logo.png';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { API_URL } from './services/api';
 
-export default function Esqueceu({ navigation }) {
+export default function Esqueceu({ navigation, route }) {
+  // tipo 'restaurante' vem do link "Esqueceu a senha?" do painel do parceiro.
+  const tipoRestaurante = route?.params?.tipo === 'restaurante';
+  const telaLogin = tipoRestaurante ? 'LoginRestaurante' : 'Login';
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
@@ -46,7 +49,7 @@ export default function Esqueceu({ navigation }) {
       await fetch(`${API_URL}/esqueci-senha`, {
         method: 'POST',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), tipo: tipoRestaurante ? 'restaurante' : 'cliente' }),
       });
       setEnviado(true);
     } catch (e) {
@@ -93,7 +96,7 @@ export default function Esqueceu({ navigation }) {
               Se {email.trim()} estiver cadastrado, você receberá um link para
               redefinir a senha. O link abre direto aqui no app e expira em 1 hora.
             </Text>
-            <TouchableOpacity style={styles.bt} onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity style={styles.bt} onPress={() => navigation.navigate(telaLogin)}>
               <Text style={styles.btTxt}>Voltar para o login</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setEnviado(false)} style={styles.linkVoltar}>
@@ -108,7 +111,7 @@ export default function Esqueceu({ navigation }) {
               criar uma nova senha.
             </Text>
 
-            <Text style={styles.label}>E-mail</Text>
+            <Text style={styles.label}>{tipoRestaurante ? 'E-mail comercial' : 'E-mail'}</Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -125,7 +128,7 @@ export default function Esqueceu({ navigation }) {
                 : <Text style={styles.btTxt}>Enviar link de redefinição</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkVoltar}>
+            <TouchableOpacity onPress={() => navigation.navigate(telaLogin)} style={styles.linkVoltar}>
               <Text style={styles.linkVoltarTxt}>Voltar para o login</Text>
             </TouchableOpacity>
           </View>

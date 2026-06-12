@@ -168,14 +168,16 @@ app.post('/esqueci-senha', async (req, res) => {
   const mensagem = 'Se este e-mail estiver cadastrado, você receberá um link de redefinição.';
   try {
     const email = (req.body.email || '').trim();
-    const user = email ? await User.findOne({ where: { email } }) : null;
+    const ehRestaurante = req.body.tipo === 'restaurante';
+    const Modelo = ehRestaurante ? Restaurant : User;
+    const user = email ? await Modelo.findOne({ where: { email } }) : null;
     if (user) {
       const token = crypto.randomBytes(32).toString('hex');
       await user.update({
         reset_token: hashToken(token),
         reset_token_expira: new Date(Date.now() + 60 * 60 * 1000),
       });
-      await enviarEmailReset(user.email, user.nome, `${PUBLIC_URL}/reset/${token}`);
+      await enviarEmailReset(user.email, user.nome, `${PUBLIC_URL}/reset/${token}${ehRestaurante ? '?tipo=restaurante' : ''}`);
     }
     res.json({ ok: true, mensagem });
   } catch (e) {
@@ -188,10 +190,12 @@ app.post('/esqueci-senha', async (req, res) => {
 app.get('/reset/:token', async (req, res) => {
   res.set('Content-Type', 'text/html; charset=utf-8');
   try {
-    const user = await User.findOne({ where: { reset_token: hashToken(req.params.token) } });
+    const ehRestaurante = req.query.tipo === 'restaurante';
+    const Modelo = ehRestaurante ? Restaurant : User;
+    const user = await Modelo.findOne({ where: { reset_token: hashToken(req.params.token) } });
     const valido = user && user.reset_token_expira && new Date(user.reset_token_expira) > new Date();
     if (!valido) return res.status(400).send(paginaReset(null));
-    res.send(paginaReset(`${APP_SCHEME}://redefinir-senha?token=${req.params.token}`));
+    res.send(paginaReset(`${APP_SCHEME}://redefinir-senha?token=${req.params.token}${ehRestaurante ? '&tipo=restaurante' : ''}`));
   } catch (e) {
     res.status(400).send(paginaReset(null));
   }
@@ -203,7 +207,9 @@ app.post('/redefinir-senha', async (req, res) => {
     if (!token || !novaSenha || String(novaSenha).length < 6) {
       return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
     }
-    const user = await User.findOne({ where: { reset_token: hashToken(token) } });
+    const ehRestaurante = req.body.tipo === 'restaurante';
+    const Modelo = ehRestaurante ? Restaurant : User;
+    const user = await Modelo.findOne({ where: { reset_token: hashToken(token) } });
     const valido = user && user.reset_token_expira && new Date(user.reset_token_expira) > new Date();
     if (!valido) {
       return res.status(400).json({ erro: 'Link inválido ou expirado. Solicite um novo.' });

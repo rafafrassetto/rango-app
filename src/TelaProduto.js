@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
 import { Cart, Weights } from './services/storage';
-import { Catalogo, IMAGENS, PRESETS_FOME } from './services/catalogo';
+import { Catalogo, IMAGENS, PRESETS_FOME, imagemDoPrato } from './services/catalogo';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { formatBRL, formatPeso as formatarPeso } from './services/format';
 
@@ -133,7 +133,7 @@ export default function TelaProduto({ navigation, route }) {
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: mostrarBanner ? 80 : 40 }}>
         <Image
           style={styles.imagem}
-          source={IMAGENS[prato.imagemKey]}
+          source={imagemDoPrato(prato)}
           resizeMode="cover"
         />
 

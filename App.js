@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -51,6 +54,18 @@ const headerEstilo = {
 };
 
 export default function App() {
+  // Modo imersivo no Android: esconde os botões virtuais de navegação;
+  // eles reaparecem temporariamente quando o usuário desliza da borda.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    (async () => {
+      try {
+        await NavigationBar.setVisibilityAsync('hidden');
+        await NavigationBar.setBehaviorAsync('overlay-swipe');
+      } catch (e) { /* alguns aparelhos não suportam */ }
+    })();
+  }, []);
+
   return (
     <NavigationContainer linking={linking}>
       <Stack.Navigator

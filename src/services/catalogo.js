@@ -16,6 +16,13 @@ export const IMAGENS = {
   macarraoTomate,
 };
 
+// Resolve a imagem de um prato: foto enviada pelo restaurante (URL ou base64)
+// tem prioridade; senão cai na imagem padrão do imagemKey.
+export function imagemDoPrato(p) {
+  if (p?.imagemUrl) return { uri: p.imagemUrl };
+  return IMAGENS[p?.imagemKey] || IMAGENS.arrozbranco;
+}
+
 export const CATALOGO_DEFAULT = [
   {
     id: 'arroz-branco',
@@ -59,7 +66,7 @@ function mapServerDish(d) {
     nome: d.nome,
     descricao: d.descricao,
     imagemKey: d.imagem_key || 'arrozbranco',
-    imagem_url: d.imagem_url || null,
+    imagemUrl: d.imagem_url || null,
     precoPorKg: Number(d.preco_por_kg),
     pesoMinG: d.peso_min_g,
     pesoMaxG: d.peso_max_g,
@@ -126,7 +133,7 @@ export const Catalogo = {
         nome: prato.nome,
         descricao: prato.descricao,
         imagem_key: prato.imagemKey,
-        imagem_url: prato.imagem_url,
+        imagem_url: prato.imagemUrl || prato.imagem_url || null,
         preco_por_kg: prato.precoPorKg,
         peso_min_g: prato.pesoMinG,
         peso_max_g: prato.pesoMaxG,

@@ -4,6 +4,7 @@ import {
   ScrollView, KeyboardAvoidingView, Platform, Switch, Image,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Feather';
+import * as ImagePicker from 'expo-image-picker';
 import { Catalogo, IMAGENS } from '../services/catalogo';
 import { RestauranteAuth } from '../services/restauranteAuth';
 import { colors, spacing, radius, shadow } from '../theme/theme';
@@ -80,6 +81,37 @@ export default function EditarPrato({ route, navigation }) {
       setCarregando(false);
     })();
   }, [id, editando]);
+
+  // Foto vai para o banco como base64; compressão alta para não pesar.
+  const OPTS_FOTO = {
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.2,
+    base64: true,
+  };
+
+  async function tirarFoto() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      return Alert.alert('Permissão', 'Autorize o uso da câmera para fotografar o prato.');
+    }
+    const r = await ImagePicker.launchCameraAsync(OPTS_FOTO);
+    if (!r.canceled && r.assets?.[0]?.base64) {
+      setImagemUrl(`data:image/jpeg;base64,${r.assets[0].base64}`);
+    }
+  }
+
+  async function escolherDaGaleria() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      return Alert.alert('Permissão', 'Autorize o acesso à galeria para escolher a foto.');
+    }
+    const r = await ImagePicker.launchImageLibraryAsync(OPTS_FOTO);
+    if (!r.canceled && r.assets?.[0]?.base64) {
+      setImagemUrl(`data:image/jpeg;base64,${r.assets[0].base64}`);
+    }
+  }
 
   function validar() {
     const erros = {};
@@ -247,12 +279,23 @@ export default function EditarPrato({ route, navigation }) {
               );
             })}
           </View>
+          <View style={styles.fotoRow}>
+            <TouchableOpacity style={styles.btFoto} onPress={tirarFoto}>
+              <Icon name="camera" size={15} color={colors.primary} />
+              <Text style={styles.btFotoTxt}>Tirar foto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.btFoto} onPress={escolherDaGaleria}>
+              <Icon name="image" size={15} color={colors.primary} />
+              <Text style={styles.btFotoTxt}>Galeria</Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.label}>Ou cole a URL de uma imagem personalizada</Text>
           <TextInput
             style={styles.input}
-            value={imagemUrl}
+            value={imagemUrl.startsWith('data:') ? '' : imagemUrl}
             onChangeText={setImagemUrl}
-            placeholder="https://..."
+            placeholder={imagemUrl.startsWith('data:') ? 'Foto carregada ✓ (cole uma URL para substituir)' : 'https://...'}
             placeholderTextColor={colors.placeholder}
             autoCapitalize="none"
             keyboardType="url"
@@ -263,6 +306,16 @@ export default function EditarPrato({ route, navigation }) {
               style={styles.imgPreviewGrande}
               resizeMode="cover"
             />
+          ) : null}
+          {imagemUrl ? (
+            <TouchableOpacity
+              onPress={() => setImagemUrl('')}
+              style={{ marginTop: 8, alignSelf: 'center' }}
+            >
+              <Text style={{ color: colors.danger, fontSize: 12, fontWeight: '600' }}>
+                Remover imagem personalizada
+              </Text>
+            </TouchableOpacity>
           ) : null}
           <Text style={styles.dica}>
             Recomendação: imagem quadrada (1:1) com pelo menos 600x600px e no máximo 2MB.
@@ -336,6 +389,14 @@ const styles = StyleSheet.create({
   imgOptAtivo: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   imgPreview: { width: 56, height: 56, borderRadius: radius.sm, marginBottom: 6 },
   imgRotulo: { color: colors.textSecondary, fontSize: 11 },
+
+  fotoRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  btFoto: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 11, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primaryLight,
+  },
+  btFotoTxt: { color: colors.primary, fontWeight: '700', fontSize: 13 },
 
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   toggleTitulo: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },

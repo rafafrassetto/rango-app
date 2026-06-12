@@ -4,6 +4,10 @@ App mobile de delivery de comida **por kg**, com painel para restaurantes e clie
 
 Projeto da disciplina **Soluções Mobile — Engenharia de Software (SATC)** · ABP Final.
 
+## 📑 Apresentação
+
+Slides da apresentação final (Canva): **https://canva.link/x2uqjv07xfvmg8s**
+
 ## Stack
 
 - **Frontend mobile**: React Native + Expo (SDK 54)

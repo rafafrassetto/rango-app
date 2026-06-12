@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
-import { Catalogo, IMAGENS } from './services/catalogo';
+import { Catalogo, IMAGENS, imagemDoPrato } from './services/catalogo';
 import { colors, spacing, radius, shadow } from './theme/theme';
 import { formatBRL } from './services/format';
 
@@ -87,7 +87,7 @@ export default function CardapioCacarola({ navigation, route }) {
                 </Text>
               </View>
               <Image
-                source={IMAGENS[p.imagemKey] || IMAGENS.arrozbranco}
+                source={imagemDoPrato(p)}
                 style={styles.imagem}
                 resizeMode="cover"
               />
