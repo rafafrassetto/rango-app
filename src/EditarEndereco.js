@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Addresses } from './services/storage';
 import { buscarCep } from './services/viaCep';
-import { Toast } from '../components/CustomAlert';
+import { Toast } from './components/CustomAlert';
 import { colors, spacing, radius } from './theme/theme';
 
 const ESTADO_INICIAL = {
