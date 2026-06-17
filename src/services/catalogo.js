@@ -72,7 +72,7 @@ function mapServerDish(d) {
     pesoMaxG: d.peso_max_g,
     passoG: d.passo_g,
     disponivel: d.disponivel !== false,
-    restaurant_id: d.restaurant_id,
+    restaurantId: d.restaurant_id,
   };
 }
 
@@ -139,7 +139,7 @@ export const Catalogo = {
         peso_max_g: prato.pesoMaxG,
         passo_g: prato.passoG,
         disponivel: prato.disponivel,
-        restaurant_id: prato.restaurant_id || 1,
+        restaurant_id: prato.restaurantId || prato.restaurant_id || 1,
       };
       let result;
       const numericId = Number(prato.id);

@@ -85,7 +85,7 @@ export default function TelaProduto({ navigation, route }) {
       precoPorKg: prato.precoPorKg,
       observacao,
       restaurantId: prato.restaurantId,
-      restaurantNome: prato.restaurantNome,
+      restaurantNome: route?.params?.restaurantNome || prato.restaurantNome || 'Restaurante',
     };
     try {
       await Cart.add(item);
