@@ -34,10 +34,13 @@ export default function FinalizarPedido({ navigation }) {
     setEnderecos(ends);
     if (ends.length > 0) {
       const salvoId = await AsyncStorage.getItem(KEY_END_ENTREGA);
-      const preferido = salvoId && ends.find((e) => String(e.id) === salvoId);
-      setEnderecoSelecionado(preferido || ends[0]);
+      const preferido = salvoId ? ends.find((e) => String(e.id) === salvoId) : null;
+      setEnderecoSelecionado((prev) => {
+        if (prev && ends.some((e) => e.id === prev.id)) return prev;
+        return preferido || ends[0];
+      });
     }
-  }, [enderecoSelecionado]);
+  }, []);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 

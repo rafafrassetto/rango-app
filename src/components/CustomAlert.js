@@ -4,14 +4,30 @@ import { colors, radius, spacing, typography, shadow } from '../theme/theme';
 
 export const alertEmitter = {
   listeners: [],
+  toastListeners: [],
   alert: (title, message, buttons) => {
     alertEmitter.listeners.forEach(listener => listener(title, message, buttons));
+  },
+  toast: (message, duration = 3000) => {
+    alertEmitter.toastListeners.forEach(listener => listener(message, duration));
   },
   subscribe: (listener) => {
     alertEmitter.listeners.push(listener);
     return () => {
       alertEmitter.listeners = alertEmitter.listeners.filter(l => l !== listener);
     };
+  },
+  subscribeToast: (listener) => {
+    alertEmitter.toastListeners.push(listener);
+    return () => {
+      alertEmitter.toastListeners = alertEmitter.toastListeners.filter(l => l !== listener);
+    };
+  }
+};
+
+export const Toast = {
+  show: (message, duration) => {
+    alertEmitter.toast(message, duration);
   }
 };
 
@@ -39,47 +55,73 @@ export default function GlobalAlert() {
   const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState({ title: '', message: '', buttons: [] });
 
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   useEffect(() => {
     const unsubscribe = alertEmitter.subscribe((title, message, buttons) => {
       setConfig({ title, message, buttons });
       setVisible(true);
     });
-    return unsubscribe;
+    
+    let toastTimer;
+    const unsubToast = alertEmitter.subscribeToast((message, duration) => {
+      setToastMessage(message);
+      setToastVisible(true);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        setToastVisible(false);
+      }, duration);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubToast();
+      clearTimeout(toastTimer);
+    };
   }, []);
 
   const close = () => setVisible(false);
 
-  if (!visible) return null;
-
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={close}>
-      <View style={styles.overlay}>
-        <View style={styles.alertBox}>
-          {!!config.title && <Text style={styles.title}>{config.title}</Text>}
-          {!!config.message && <Text style={styles.message}>{config.message}</Text>}
-          
-          <View style={styles.buttonRow}>
-            {config.buttons.map((btn, index) => {
-              const isCancel = btn.style === 'cancel' || btn.style === 'destructive';
-              return (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[styles.button, isCancel ? styles.buttonOutline : styles.buttonPrimary, config.buttons.length > 2 && { width: '100%', marginBottom: 8 }]} 
-                  onPress={() => {
-                    close();
-                    if (btn.onPress) btn.onPress();
-                  }}
-                >
-                  <Text style={[styles.buttonText, isCancel ? styles.buttonTextOutline : styles.buttonTextPrimary]}>
-                    {btn.text || 'OK'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+    <>
+      <Modal transparent animationType="fade" visible={visible} onRequestClose={close}>
+        <View style={styles.overlay}>
+          <View style={styles.alertBox}>
+            {!!config.title && <Text style={styles.title}>{config.title}</Text>}
+            {!!config.message && <Text style={styles.message}>{config.message}</Text>}
+            
+            <View style={styles.buttonRow}>
+              {config.buttons.map((btn, index) => {
+                const isCancel = btn.style === 'cancel' || btn.style === 'destructive';
+                return (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[styles.button, isCancel ? styles.buttonOutline : styles.buttonPrimary, config.buttons.length > 2 && { width: '100%', marginBottom: 8 }]} 
+                    onPress={() => {
+                      close();
+                      if (btn.onPress) btn.onPress();
+                    }}
+                  >
+                    <Text style={[styles.buttonText, isCancel ? styles.buttonTextOutline : styles.buttonTextPrimary]}>
+                      {btn.text || 'OK'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {toastVisible && (
+        <View style={styles.toastContainer} pointerEvents="none">
+          <View style={styles.toastBox}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </View>
+      )}
+    </>
   );
 }
 
@@ -146,4 +188,26 @@ const styles = StyleSheet.create({
   buttonTextOutline: {
     color: colors.textPrimary,
   },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  },
+  toastBox: {
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.pill,
+    maxWidth: '80%',
+    ...shadow.card,
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+  }
 });

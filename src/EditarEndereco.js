@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Addresses } from './services/storage';
 import { buscarCep } from './services/viaCep';
+import { Toast } from '../components/CustomAlert';
 import { colors, spacing, radius } from './theme/theme';
 
 const ESTADO_INICIAL = {
@@ -39,7 +40,7 @@ export default function EditarEndereco({ route, navigation }) {
   }
 
   async function consultarCep() {
-    if (!form.cep) return Alert.alert('Atenção', 'Digite o CEP primeiro.');
+    if (!form.cep) return Toast.show('Digite o CEP primeiro.');
     try {
       setBuscandoCep(true);
       const dados = await buscarCep(form.cep);
@@ -49,7 +50,7 @@ export default function EditarEndereco({ route, navigation }) {
         bairro: dados.bairro, cidade: dados.cidade, estado: dados.estado,
       }));
     } catch (e) {
-      Alert.alert('CEP', e.message);
+      Toast.show(e.message);
     } finally {
       setBuscandoCep(false);
     }
@@ -57,10 +58,10 @@ export default function EditarEndereco({ route, navigation }) {
 
   async function salvar() {
     if (!form.cep || !form.rua || !form.numero)
-      return Alert.alert('Atenção', 'CEP, rua e número são obrigatórios.');
+      return Toast.show('CEP, rua e número são obrigatórios.');
     if (editando) await Addresses.update(id, form);
     else await Addresses.add(form);
-    Alert.alert('Sucesso', editando ? 'Endereço atualizado!' : 'Endereço cadastrado!');
+    Toast.show(editando ? 'Endereço atualizado!' : 'Endereço cadastrado!');
     navigation.goBack();
   }
 
