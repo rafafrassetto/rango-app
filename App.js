@@ -33,6 +33,7 @@ import PainelRestaurante from './src/restaurante/PainelRestaurante';
 import EditarPrato from './src/restaurante/EditarPrato';
 
 import { colors } from './src/theme/theme';
+import GlobalAlert from './src/components/CustomAlert';
 
 const Stack = createNativeStackNavigator();
 
@@ -201,6 +202,7 @@ export default function App() {
           options={{ title: 'Prato' }}
         />
       </Stack.Navigator>
+      <GlobalAlert />
     </NavigationContainer>
   );
 }
