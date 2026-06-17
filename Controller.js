@@ -6,7 +6,7 @@ const cors = require('cors');
 const models = require('./models');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -103,21 +103,13 @@ function hashToken(token) {
 }
 
 async function enviarEmailReset(para, nome, link) {
-  // Sem SMTP configurado, o link sai no log do servidor (útil em dev).
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.log(`[reset-senha] SMTP não configurado. Link para ${para}: ${link}`);
+  if (!process.env.RESEND_API_KEY) {
+    console.log(`[reset-senha] RESEND_API_KEY não configurado. Link para ${para}: ${link}`);
     return;
   }
+
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    await transporter.sendMail({
-      from: `"Rango App" <${process.env.SMTP_USER}>`,
-      to: para,
-      subject: 'Redefinição de senha — Rango App',
-      html: `
+    const htmlContent = `
         <div style="font-family:Arial,sans-serif;max-width:440px;margin:0 auto;">
           <div style="background:#EA1D2C;border-radius:12px 12px 0 0;padding:18px;text-align:center;">
             <span style="color:#fff;font-size:22px;font-weight:bold;">Rango App</span>
@@ -135,10 +127,24 @@ async function enviarEmailReset(para, nome, link) {
             <p style="color:#888;font-size:12px;">O link expira em 1 hora. Se você não pediu
             a redefinição, ignore este e-mail — sua senha continua a mesma.</p>
           </div>
-        </div>`,
+        </div>`;
+
+    await axios.post('https://api.resend.com/emails', {
+      from: 'Rango App <onboarding@resend.dev>',
+      to: para,
+      subject: 'Redefinição de senha — Rango App',
+      html: htmlContent
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
     });
+
+    console.log(`[reset-senha] E-mail HTTP enviado com sucesso via Resend para ${para}`);
   } catch (e) {
-    console.log(`[reset-senha] Falha ao enviar e-mail (${e.message}). Link: ${link}`);
+    const erroMsg = e.response?.data?.message || e.message;
+    console.log(`[reset-senha] Falha ao enviar e-mail via API (${erroMsg}). Link: ${link}`);
   }
 }
 
