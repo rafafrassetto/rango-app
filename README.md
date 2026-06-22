@@ -1,4 +1,13 @@
-# Rango App
+# Rangô App
+
+
+<img width="696" height="394" alt="image" src="https://github.com/user-attachments/assets/fbb50b0a-241e-48b2-95e5-63be264d25d9" />
+<img width="703" height="396" alt="image" src="https://github.com/user-attachments/assets/980e4098-6c13-4910-85e1-5c94cf408a45" />
+<img width="697" height="396" alt="image" src="https://github.com/user-attachments/assets/80106915-e197-49fb-b88b-14c187223632" />
+
+
+
+# Descrição do App
 
 App mobile de delivery de comida **por kg**, com painel para restaurantes e cliente final. Foco em restaurantes de Criciúma/SC.
 
@@ -7,6 +16,8 @@ Projeto da disciplina **Soluções Mobile — Engenharia de Software (SATC)** ·
 ## 📑 Apresentação
 
 Slides da apresentação final (Canva): **https://canva.link/x2uqjv07xfvmg8s**
+
+Link para o Download Apk do App : https://expo.dev/accounts/rafafrassetto/projects/rango-app/builds/99727756-3e99-4afd-a85d-b9a49c969018
 
 ## Stack
 
