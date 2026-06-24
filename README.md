@@ -19,8 +19,6 @@ Slides da apresentação final (Canva): **https://canva.link/x2uqjv07xfvmg8s**
 
 Link para o Download Apk do App : https://expo.dev/accounts/rafafrassetto/projects/rango-app/builds/99727756-3e99-4afd-a85d-b9a49c969018
 
-Link para o vídeo demonstrativo : https://www.youtube.com/watch?v=D_NpzpVLUL8
-
 ## Stack
 
 - **Frontend mobile**: React Native + Expo (SDK 54)
